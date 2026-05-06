@@ -1,0 +1,46 @@
+services:
+
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: rov_postgis
+    environment:
+      POSTGRES_DB: rovdb
+      POSTGRES_USER: rovadmin
+      POSTGRES_PASSWORD: rovpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rovadmin -d rovdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  geoserver:
+    image: kartoza/geoserver:2.24.0
+    container_name: rov_geoserver
+    environment:
+      GEOSERVER_ADMIN_USER: admin
+      GEOSERVER_ADMIN_PASSWORD: geoserver
+      GEOSERVER_DATA_DIR: /opt/geoserver/data_dir
+    ports:
+      - "8080:8080"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+  ingestion:
+    build: ./ingestion
+    container_name: rov_ingestion
+    volumes:
+      - ~/rov-gis/Data:/data
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+volumes:
+  postgis_data:
+  geoserver_data:
