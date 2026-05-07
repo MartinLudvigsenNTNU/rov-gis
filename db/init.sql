@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS auv_tracks (
     salinity      FLOAT,
     temperature   FLOAT,
     conductivity  FLOAT,
+    source_path   VARCHAR(500),
     geom          GEOMETRY(PointZ, 4326)
 );
 
