@@ -48,6 +48,8 @@ services:
   ingestion:
     build: ./ingestion
     container_name: rov_ingestion
+    environment:
+      PYTHONUNBUFFERED: "1"
     volumes:
       - ~/rov-gis/Data:/data
     depends_on:

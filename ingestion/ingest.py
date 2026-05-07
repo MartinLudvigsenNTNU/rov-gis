@@ -1,6 +1,7 @@
 import imcpy
 import imcpy.lsf as lsf
 from datetime import datetime, timezone
+import hashlib
 import math
 import glob
 import gzip
@@ -11,6 +12,14 @@ import tempfile
 import psycopg2
 from shapely.geometry import Point
 from shapely.wkb import dumps
+
+
+def file_md5(path):
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def extract_campaign(lsf_path):
@@ -71,24 +80,19 @@ def get_vehicle_name(buckets):
     return None
 
 
-def build_sensor_lookup(msgs, key_attr="timestamp"):
-    """Build a list of (timestamp, value) pairs for fast nearest-neighbour lookup."""
-    return [(getattr(m, key_attr), m.value) for m in msgs]
-
-
-def nearest_value(lookup, ts):
-    """Return the sensor value closest in time to ts, or None if no data."""
-    if not lookup:
-        return None
-    # Messages are chronological; walk forward until we pass ts
-    best_val, best_dt = lookup[0][1], abs(lookup[0][0] - ts)
-    for t, v in lookup:
-        dt = abs(t - ts)
-        if dt < best_dt:
-            best_dt, best_val = dt, v
-        elif t > ts + 5:   # more than 5 s ahead — stop searching
-            break
-    return best_val
+def align_sensor(es_msgs, sensor_msgs):
+    """Return list of nearest sensor values aligned to es_msgs using two-pointer O(n+m)."""
+    if not sensor_msgs:
+        return [None] * len(es_msgs)
+    result = []
+    j = 0
+    n = len(sensor_msgs)
+    for msg in es_msgs:
+        ts = msg.timestamp
+        while j < n - 1 and abs(sensor_msgs[j + 1].timestamp - ts) <= abs(sensor_msgs[j].timestamp - ts):
+            j += 1
+        result.append(sensor_msgs[j].value)
+    return result
 
 
 def lsf_to_points(lsf_path):
@@ -105,24 +109,25 @@ def lsf_to_points(lsf_path):
 
     vehicle = get_vehicle_name(buckets) or "AUV"
 
-    sal_lookup  = build_sensor_lookup(buckets[imcpy.Salinity])
-    temp_lookup = build_sensor_lookup(buckets[imcpy.Temperature])
-    cond_lookup = build_sensor_lookup(buckets[imcpy.Conductivity])
+    sal_vals  = align_sensor(es_msgs, buckets[imcpy.Salinity])
+    temp_vals = align_sensor(es_msgs, buckets[imcpy.Temperature])
+    cond_vals = align_sensor(es_msgs, buckets[imcpy.Conductivity])
 
+    name = os.path.basename(os.path.dirname(lsf_path))
     points = []
-    for msg in es_msgs:
+    for i, msg in enumerate(es_msgs):
         lat = math.degrees(msg.lat) + (msg.x / 111320)
         lon = math.degrees(msg.lon) + (msg.y / (111320 * math.cos(msg.lat)))
         points.append({
-            "name":         os.path.basename(os.path.dirname(lsf_path)),
+            "name":         name,
             "vehicle":      vehicle,
             "timestamp":    datetime.utcfromtimestamp(msg.timestamp),
             "depth":        msg.depth,
             "year":         year,
             "campaign":     campaign,
-            "salinity":     nearest_value(sal_lookup,  msg.timestamp),
-            "temperature":  nearest_value(temp_lookup, msg.timestamp),
-            "conductivity": nearest_value(cond_lookup, msg.timestamp),
+            "salinity":     sal_vals[i],
+            "temperature":  temp_vals[i],
+            "conductivity": cond_vals[i],
             "geom":         Point(lon, lat, msg.depth),
         })
     return points
@@ -157,7 +162,20 @@ for gz in all_gz:
         lsf_files.append(gz)
 
 lsf_files.sort()
-print(f"Fant {len(lsf_files)} LSF-filer")
+
+# Dedupliser på filinnhold (MD5) — samme logg kan ligge i både kortnavns- og beskrivelsesmapper
+seen_hashes = set()
+unique_files = []
+for path in lsf_files:
+    h = file_md5(path)
+    if h in seen_hashes:
+        print(f"Hopper over duplikat: {os.path.dirname(path)}")
+    else:
+        seen_hashes.add(h)
+        unique_files.append(path)
+lsf_files = unique_files
+
+print(f"Fant {len(lsf_files)} unike LSF-filer")
 
 total = 0
 for path in lsf_files:
@@ -184,9 +202,9 @@ for path in lsf_files:
         )
     conn.commit()
     total += len(points)
+    sal_str = f"{p0['salinity']:.2f}" if p0['salinity'] is not None else "N/A"
     print(f"  → {len(points)} punkter | farkost={p0['vehicle']!r} "
-          f"år={p0['year']} kampanje={p0['campaign']!r} "
-          f"sal={p0['salinity']:.2f if p0['salinity'] else 'N/A'}")
+          f"år={p0['year']} kampanje={p0['campaign']!r} sal={sal_str}")
 
 print(f"\nFerdig! Totalt {total} punkter i PostGIS")
 cur.close()
