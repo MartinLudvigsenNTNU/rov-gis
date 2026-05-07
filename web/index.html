@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>ROV/AUV GIS Demonstrator</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.css"/>
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; }
         #map { height: 100vh; width: 100%; }
@@ -25,8 +26,9 @@
     <div id="map"></div>
     <div id="title">🌊 ROV/AUV GIS Demonstrator – NTNU</div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.js"></script>
     <script>
-        var map = L.map('map').setView([63.441, 10.348], 14);
+        var map = L.map('map').setView([70, 15], 5);
 
         var cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap © CARTO', maxZoom: 19
@@ -65,34 +67,100 @@
             "Norgeskart (gråtone)": kartverketGraatone,
         };
 
-        var overlayMaps = {
-            "EMODnet Batymetri": emodnetBathy,
+        // Farge per farkost og år — matcher GeoServer SLD-stilene
+        var vehicleConfig = {
+            'auv_fridtjof': {
+                label: 'lauv-fridtjof',
+                yearColors: { 2017: '#66aaff', 2018: '#0033aa' }
+            },
+            'auv_Harald': {
+                label: 'lauv-Harald',
+                yearColors: { 2017: '#ffaa44', 2018: '#cc2200' }
+            }
         };
 
-        var layerControl = L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+        function dot(color) {
+            return '<span style="display:inline-block;width:10px;height:10px;' +
+                   'border-radius:50%;background:' + color + ';' +
+                   'margin-right:5px;vertical-align:middle"></span>';
+        }
+
         L.control.scale({ imperial: false }).addTo(map);
 
-        // Hent lag dynamisk fra GeoServer
+        function cfgKey(layerName) {
+            return Object.keys(vehicleConfig).find(
+                k => k.toLowerCase() === layerName.toLowerCase()
+            );
+        }
+
         fetch('/geoserver/rest/layers.json', {
             headers: { 'Authorization': 'Basic ' + btoa('admin:geoserver') }
         })
         .then(r => r.json())
         .then(data => {
-            (data.layers.layer || []).forEach(layer => {
-                var parts = layer.name.split(':');
+            var geoLayers = (data.layers.layer || []).filter(l => {
+                var name = l.name.split(':')[1] || l.name;
+                return !!cfgKey(name);
+            });
+
+            var bboxFetches = geoLayers.map(layer =>
+                fetch('/geoserver/rest/layers/' + layer.name + '.json', {
+                    headers: { 'Authorization': 'Basic ' + btoa('admin:geoserver') }
+                })
+                .then(r => r.json())
+                .then(d => fetch(d.layer.resource.href, {
+                    headers: { 'Authorization': 'Basic ' + btoa('admin:geoserver') }
+                }))
+                .then(r => r.json())
+            );
+
+            return Promise.all(bboxFetches).then(details => ({ geoLayers, details }));
+        })
+        .then(({ geoLayers, details }) => {
+            var groupedOverlays = {
+                'Batymetri': { 'EMODnet': emodnetBathy }
+            };
+
+            var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            geoLayers.forEach((layer, i) => {
+                var parts     = layer.name.split(':');
                 var workspace = parts[0];
                 var layerName = parts[1] || parts[0];
-                var wmsLayer = L.tileLayer.wms('/geoserver/' + workspace + '/wms', {
-                    layers: layerName,
-                    format: 'image/png',
-                    transparent: true,
-                    attribution: 'NTNU ROV/AUV GIS'
+                var cfg       = vehicleConfig[cfgKey(layerName)];
+
+                var groupLabel = dot(Object.values(cfg.yearColors)[0]) + '<b>' + cfg.label + '</b>';
+                groupedOverlays[groupLabel] = {};
+
+                Object.entries(cfg.yearColors).forEach(([year, color]) => {
+                    groupedOverlays[groupLabel][dot(color) + year] = L.tileLayer.wms(
+                        '/geoserver/' + workspace + '/wms', {
+                            layers:      layerName,
+                            format:      'image/png',
+                            transparent: true,
+                            attribution: 'NTNU ROV/AUV GIS',
+                            CQL_FILTER:  'year=' + year
+                        }
+                    );
                 });
-                layerControl.addOverlay(wmsLayer, layer.name);
+
+                var bb = details[i]?.featureType?.latLonBoundingBox;
+                if (bb) {
+                    minX = Math.min(minX, bb.minx); maxX = Math.max(maxX, bb.maxx);
+                    minY = Math.min(minY, bb.miny); maxY = Math.max(maxY, bb.maxy);
+                }
             });
+
+            L.control.groupedLayers(baseMaps, groupedOverlays, {
+                collapsed: false,
+                groupCheckboxes: true
+            }).addTo(map);
+
+            if (isFinite(minX)) {
+                map.fitBounds([[minY, minX], [maxY, maxX]], { padding: [20, 20] });
+            }
         })
         .catch(err => console.warn('Kunne ikke hente GeoServer-lag:', err));
-
     </script>
 </body>
 </html>
