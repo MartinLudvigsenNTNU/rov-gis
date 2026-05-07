@@ -32,16 +32,6 @@
             transition: transform 0.15s ease;
             pointer-events: none;
         }
-        .leaflet-control-layers-group-sublayers {
-            overflow: hidden;
-            transition: max-height 0.2s ease, opacity 0.2s ease;
-            max-height: 200px;
-            opacity: 1;
-        }
-        .leaflet-control-layers-group-sublayers.collapsed {
-            max-height: 0;
-            opacity: 0;
-        }
     </style>
 </head>
 <body>
@@ -113,21 +103,29 @@
             control.getContainer()
                 .querySelectorAll('.leaflet-control-layers-group')
                 .forEach(function(group) {
-                    var label     = group.querySelector('.leaflet-control-layers-group-label');
-                    var sublayers = group.querySelector('.leaflet-control-layers-group-sublayers');
-                    if (!label || !sublayers) return;
+                    var label = group.querySelector('.leaflet-control-layers-group-label');
+                    if (!label) return;
+
+                    // Underlags-elementer er direkte søsken til label i group-div
+                    var sublayerEls = Array.from(group.children).filter(function(el) {
+                        return el !== label;
+                    });
+                    if (sublayerEls.length === 0) return;
 
                     var arrow = document.createElement('span');
                     arrow.className = 'group-arrow';
-                    arrow.textContent = '▼';
+                    arrow.textContent = ' ▼';
                     label.appendChild(arrow);
 
                     label.addEventListener('click', function(e) {
                         if (e.target.type === 'checkbox') return;
                         e.preventDefault();
                         e.stopPropagation();
-                        var isCollapsed = sublayers.classList.toggle('collapsed');
-                        arrow.textContent = isCollapsed ? '▶' : '▼';
+                        var expanded = arrow.textContent.trim() === '▼';
+                        sublayerEls.forEach(function(el) {
+                            el.style.display = expanded ? 'none' : '';
+                        });
+                        arrow.textContent = expanded ? ' ▶' : ' ▼';
                     });
                 });
         }
