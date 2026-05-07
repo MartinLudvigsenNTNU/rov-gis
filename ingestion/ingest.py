@@ -102,7 +102,7 @@ def lsf_to_points(lsf_path):
 
     first_ts = datetime.fromtimestamp(es_msgs[0].timestamp, tz=timezone.utc)
     year     = first_ts.year
-    vehicle  = get_vehicle_name(buckets) or "AUV"
+    vehicle  = (get_vehicle_name(buckets) or "auv").lower()
 
     sal_vals  = align_sensor(es_msgs, buckets[imcpy.Salinity])
     temp_vals = align_sensor(es_msgs, buckets[imcpy.Temperature])
