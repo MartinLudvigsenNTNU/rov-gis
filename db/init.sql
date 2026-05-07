@@ -1,10 +1,15 @@
 CREATE TABLE IF NOT EXISTS auv_tracks (
-    id          SERIAL PRIMARY KEY,
-    name        VARCHAR(255),
-    vehicle     VARCHAR(50),
-    timestamp   TIMESTAMP,
-    depth       FLOAT,
-    geom        GEOMETRY(PointZ, 4326)
+    id            SERIAL PRIMARY KEY,
+    name          VARCHAR(255),
+    vehicle       VARCHAR(100),
+    timestamp     TIMESTAMP,
+    depth         FLOAT,
+    year          INTEGER,
+    campaign      VARCHAR(255),
+    salinity      FLOAT,
+    temperature   FLOAT,
+    conductivity  FLOAT,
+    geom          GEOMETRY(PointZ, 4326)
 );
 
 CREATE INDEX IF NOT EXISTS auv_tracks_geom_idx 
