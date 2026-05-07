@@ -20,6 +20,28 @@
             font-size: 14px;
             font-weight: bold;
         }
+        .leaflet-control-layers-group-label {
+            cursor: pointer;
+            user-select: none;
+        }
+        .group-arrow {
+            float: right;
+            font-size: 10px;
+            color: #666;
+            margin-left: 6px;
+            transition: transform 0.15s ease;
+            pointer-events: none;
+        }
+        .leaflet-control-layers-group-sublayers {
+            overflow: hidden;
+            transition: max-height 0.2s ease, opacity 0.2s ease;
+            max-height: 200px;
+            opacity: 1;
+        }
+        .leaflet-control-layers-group-sublayers.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -87,6 +109,29 @@
 
         L.control.scale({ imperial: false }).addTo(map);
 
+        function addGroupToggles(control) {
+            control.getContainer()
+                .querySelectorAll('.leaflet-control-layers-group')
+                .forEach(function(group) {
+                    var label     = group.querySelector('.leaflet-control-layers-group-label');
+                    var sublayers = group.querySelector('.leaflet-control-layers-group-sublayers');
+                    if (!label || !sublayers) return;
+
+                    var arrow = document.createElement('span');
+                    arrow.className = 'group-arrow';
+                    arrow.textContent = '▼';
+                    label.appendChild(arrow);
+
+                    label.addEventListener('click', function(e) {
+                        if (e.target.type === 'checkbox') return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var isCollapsed = sublayers.classList.toggle('collapsed');
+                        arrow.textContent = isCollapsed ? '▶' : '▼';
+                    });
+                });
+        }
+
         function cfgKey(layerName) {
             return Object.keys(vehicleConfig).find(
                 k => k.toLowerCase() === layerName.toLowerCase()
@@ -151,10 +196,12 @@
                 }
             });
 
-            L.control.groupedLayers(baseMaps, groupedOverlays, {
+            var layerControl = L.control.groupedLayers(baseMaps, groupedOverlays, {
                 collapsed: false,
                 groupCheckboxes: true
             }).addTo(map);
+
+            addGroupToggles(layerControl);
 
             if (isFinite(minX)) {
                 map.fitBounds([[minY, minX], [maxY, maxX]], { padding: [20, 20] });
