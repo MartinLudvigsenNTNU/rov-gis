@@ -363,7 +363,15 @@
         var GS_AUTH = 'Basic ' + btoa('admin:geoserver');
         var drawnItems = new L.FeatureGroup().addTo(map);
         var currentBounds = null;
-        var searchResults  = [];
+        var searchResults = [];
+
+        function showSearchError(msg) {
+            var resDiv = document.getElementById('search-results');
+            resDiv.style.display = 'block';
+            document.getElementById('result-count').textContent = '⚠ ' + msg;
+            document.getElementById('result-list').innerHTML = '';
+            document.getElementById('btn-export').style.display = 'none';
+        }
 
         // Toggle panel
         var panel  = document.getElementById('search-panel');
@@ -389,15 +397,15 @@
             new L.Draw.Rectangle(map, drawControl.options.draw.rectangle).enable();
         });
 
-        map.on(L.Draw.Event.CREATED, function(e) {
+        map.on('draw:created', function(e) {
             drawnItems.clearLayers();
             drawnItems.addLayer(e.layer);
             currentBounds = e.layer.getBounds();
             var bb = currentBounds;
             document.getElementById('rect-status').textContent =
-                'Rektangel: ' +
                 bb.getWest().toFixed(3) + '°Ø, ' + bb.getSouth().toFixed(3) + '°N  →  ' +
                 bb.getEast().toFixed(3) + '°Ø, ' + bb.getNorth().toFixed(3) + '°N';
+            console.log('[søk] rektangel satt:', currentBounds.toBBoxString());
         });
 
         document.getElementById('btn-clear-rect').addEventListener('click', clearRect);
@@ -433,13 +441,17 @@
             if (dt) filters.push("start_time <= '" + dt + "'");
 
             if (!filters.length) {
-                alert('Tegn et rektangel eller velg en datoperiode.');
+                showSearchError('Tegn et rektangel eller velg en datoperiode.');
                 return;
             }
 
+            var cql = filters.join(' AND ');
             var url = '/geoserver/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
                       '&TYPENAMES=NTNU:auv_missions&outputFormat=application/json&count=2000' +
-                      '&CQL_FILTER=' + encodeURIComponent(filters.join(' AND '));
+                      '&CQL_FILTER=' + encodeURIComponent(cql);
+
+            console.log('[søk] CQL_FILTER:', cql);
+            console.log('[søk] URL:', url);
 
             var resDiv = document.getElementById('search-results');
             resDiv.style.display = 'block';
@@ -447,18 +459,25 @@
             document.getElementById('result-list').innerHTML    = '';
             document.getElementById('btn-export').style.display = 'none';
 
-            fetch(url, { headers: { 'Authorization': GS_AUTH } })
-                .then(function(r) { return r.json(); })
+            // WFS er offentleg tilgjengeleg — ingen auth-header nødvendig
+            fetch(url)
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(function(data) {
+                    if (data.exceptions) throw new Error(data.exceptions[0].text || 'GeoServer-feil');
                     searchResults = (data.features || [])
                         .map(function(f) { return f.properties; })
                         .sort(function(a, b) {
                             return (a.start_time || '') > (b.start_time || '') ? 1 : -1;
                         });
+                    console.log('[søk] treff:', searchResults.length);
                     renderResults(searchResults);
                 })
                 .catch(function(err) {
-                    document.getElementById('result-count').textContent = 'Feil: ' + err;
+                    console.error('[søk] feil:', err);
+                    showSearchError(String(err));
                 });
         });
 
