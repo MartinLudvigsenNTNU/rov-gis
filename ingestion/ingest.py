@@ -1,6 +1,7 @@
 import imcpy
 import imcpy.lsf as lsf
 from datetime import datetime, timezone
+import base64
 import hashlib
 import math
 import glob
@@ -10,11 +11,55 @@ import re
 import shutil
 import struct
 import tempfile
+import urllib.request
+import urllib.error
 import psycopg2
 from shapely.geometry import Point
 from shapely.wkb import dumps
 
-DATA_ROOT = "/data"
+DATA_ROOT    = "/data"
+GEOSERVER    = "http://geoserver:8080/geoserver"
+GWC_CREDS    = base64.b64encode(b"admin:geoserver").decode()
+
+_VEHICLE_LAYER = {
+    "lauv-fridtjof": "NTNU:auv_fridtjof",
+    "lauv-harald":   "NTNU:auv_harald",
+    "lauv-roald":    "NTNU:auv_roald",
+    "lauv-thor":     "NTNU:auv_thor",
+    "lauv-marie":    "NTNU:auv_marie",
+}
+
+
+def gwc_truncate(vehicle, year):
+    """Invalider cachede tiles for eit lag+år-par etter ny ingestion."""
+    layer = _VEHICLE_LAYER.get(vehicle)
+    if not layer:
+        return
+    for gridset in ("EPSG:900913", "EPSG:4326"):
+        xml = (
+            f"<seedRequest>"
+            f"<name>{layer}</name>"
+            f"<gridSetId>{gridset}</gridSetId>"
+            f"<zoomStart>0</zoomStart><zoomStop>20</zoomStop>"
+            f"<type>truncate</type><threadCount>1</threadCount>"
+            f"<parameters><entry>"
+            f"<string>CQL_FILTER</string><string>year={year}</string>"
+            f"</entry></parameters>"
+            f"</seedRequest>"
+        )
+        url = f"{GEOSERVER}/gwc/rest/seed/{layer}"
+        req = urllib.request.Request(
+            url, data=xml.encode(), method="POST",
+            headers={
+                "Authorization": f"Basic {GWC_CREDS}",
+                "Content-Type": "application/xml",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                pass  # 200 OK — truncate startet
+        except Exception as e:
+            print(f"  ⚠ GWC truncate feilet ({gridset}): {e}")
 
 
 def rel_path(abs_path):
@@ -371,6 +416,7 @@ for path in new_files:
              dumps(p["geom"], hex=True)),
         )
     conn.commit()
+    gwc_truncate(p0["vehicle"], p0["year"])
     total += len(points)
     sal_str = f"{p0['salinity']:.2f}" if p0["salinity"] is not None else "N/A"
     print(f"  → {len(points)} punkter | farkost={p0['vehicle']!r} "
