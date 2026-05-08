@@ -8,6 +8,7 @@ import gzip
 import os
 import re
 import shutil
+import struct
 import tempfile
 import psycopg2
 from shapely.geometry import Point
@@ -22,8 +23,10 @@ def rel_path(abs_path):
 
 
 def file_md5(path):
+    """MD5 av dekomprimert innhold — .lsf og .lsf.gz med samme data gir samme hash."""
     h = hashlib.md5()
-    with open(path, "rb") as f:
+    opener = gzip.open if path.endswith(".gz") else open
+    with opener(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
             h.update(chunk)
     return h.hexdigest()
@@ -35,25 +38,125 @@ def extract_campaign(lsf_path):
     return m.group(1) if m else mission_folder
 
 
+# IMC header: sync(2) mgid(2) size(2) timestamp(8) src(2) src_ent(1) dst(2) dst_ent(1)
+_HDR = struct.Struct('<HHHdHBHB')
+_HDR_SIZE = 20
+_SYNC_IMC5 = 0xFE54
+_SYNC_IMC6 = 0xFE55  # IMC v5.5 — header format identical, only sync differs
+
+# Payload layouts for messages we need
+_ES  = struct.Struct('<ddffffffffffffffffff')   # EstimatedState: lat lon height x y z phi theta psi u v w vx vy vz p q r depth alt
+_SAL = struct.Struct('<f')   # Salinity: value
+_TMP = struct.Struct('<f')   # Temperature: value
+_CND = struct.Struct('<f')   # Conductivity: value
+
+_MGID_ES   = 350
+_MGID_ANN  = 151
+_MGID_SAL  = 270
+_MGID_TMP  = 263
+_MGID_CND  = 269
+
+
+class _Msg:
+    """Enkel meldings-container brukt av den raw parseren."""
+    __slots__ = ('timestamp', 'src', 'lat', 'lon', 'x', 'y', 'depth', 'speed', 'value', 'sys_name', 'sys_type_name')
+
+
+def _decode_imc_string(data, offset):
+    """IMC plaintext: uint16 lengde + UTF-8 bytes."""
+    length = struct.unpack_from('<H', data, offset)[0]
+    return data[offset+2: offset+2+length].decode('utf-8', errors='replace'), offset + 2 + length
+
+
+def _read_raw(data):
+    """Parser for IMC5 (0xFE54) og IMC5.5 (0xFE55) — hopper over CRC-validering."""
+    buckets = {'es': [], 'ann': [], 'sal': [], 'tmp': [], 'cnd': []}
+    offset = 0
+    n = len(data)
+    while offset + _HDR_SIZE <= n:
+        sync, mgid, size, ts, src, _, _, _ = _HDR.unpack_from(data, offset)
+        if sync not in (_SYNC_IMC5, _SYNC_IMC6):
+            break
+        end = offset + _HDR_SIZE + size
+        if end + 2 > n:
+            break
+        payload = data[offset + _HDR_SIZE: end]
+
+        if mgid == _MGID_ES and len(payload) >= _ES.size:
+            vals = _ES.unpack_from(payload)
+            m = _Msg()
+            m.timestamp, m.src = ts, src
+            m.lat, m.lon = vals[0], vals[1]
+            m.x,   m.y   = vals[3], vals[4]
+            m.depth       = vals[18]
+            u, v, w       = vals[9], vals[10], vals[11]
+            m.speed       = math.sqrt(u*u + v*v + w*w)
+            buckets['es'].append(m)
+
+        elif mgid == _MGID_ANN and len(payload) >= 3:
+            try:
+                sys_name, off2 = _decode_imc_string(payload, 0)
+                sys_type_raw = payload[off2]
+                m = _Msg()
+                m.timestamp, m.src = ts, src
+                m.sys_name = sys_name
+                # sys_type enum: 0=CCU,1=HMANU,2=MOBILESENSOR,3=STATICSENSOR,4=UUV,5=USV,6=UAV,7=UGV,8=SUBMARINE
+                m.sys_type_name = {4: 'UUV', 5: 'USV', 6: 'UAV'}.get(sys_type_raw, 'OTHER')
+                buckets['ann'].append(m)
+            except Exception:
+                pass
+
+        elif mgid == _MGID_SAL and len(payload) >= 4:
+            m = _Msg(); m.timestamp = ts; m.value = _SAL.unpack_from(payload)[0]
+            buckets['sal'].append(m)
+        elif mgid == _MGID_TMP and len(payload) >= 4:
+            m = _Msg(); m.timestamp = ts; m.value = _TMP.unpack_from(payload)[0]
+            buckets['tmp'].append(m)
+        elif mgid == _MGID_CND and len(payload) >= 4:
+            m = _Msg(); m.timestamp = ts; m.value = _CND.unpack_from(payload)[0]
+            buckets['cnd'].append(m)
+
+        offset = end + 2  # skip 2-byte CRC footer
+    return buckets
+
+
+def _peek_sync(path):
+    """Les de to første bytene for å sjekke sync-nummer."""
+    opener = gzip.open if path.endswith('.gz') else open
+    with opener(path, 'rb') as f:
+        two = f.read(2)
+    if len(two) < 2:
+        return None
+    return struct.unpack_from('<H', two)[0]
+
+
+def _load_bytes(path):
+    if path.endswith('.gz'):
+        with gzip.open(path, 'rb') as f:
+            return f.read()
+    with open(path, 'rb') as f:
+        return f.read()
+
+
 def read_msgs(path):
-    types = [
-        imcpy.EstimatedState,
-        imcpy.Announce,
-        imcpy.Salinity,
-        imcpy.Temperature,
-        imcpy.Conductivity,
-    ]
-    if path.endswith(".gz"):
-        with tempfile.NamedTemporaryFile(suffix=".lsf", delete=False) as tmp:
-            with gzip.open(path, "rb") as gz:
+    sync = _peek_sync(path)
+    if sync == _SYNC_IMC6:
+        raw = _read_raw(_load_bytes(path))
+        # Konverter til samme struktur som imcpy-stien bruker
+        return {'imc6': True, 'raw': raw}
+
+    # IMC5 — bruk imcpy som før
+    types = [imcpy.EstimatedState, imcpy.Announce, imcpy.Salinity, imcpy.Temperature, imcpy.Conductivity]
+    if path.endswith('.gz'):
+        with tempfile.NamedTemporaryFile(suffix='.lsf', delete=False) as tmp:
+            with gzip.open(path, 'rb') as gz:
                 shutil.copyfileobj(gz, tmp)
             tmp_path = tmp.name
         try:
             return _read_from_path(tmp_path, types)
         finally:
             os.unlink(tmp_path)
-    else:
-        return _read_from_path(path, types)
+    return _read_from_path(path, types)
 
 
 def _read_from_path(path, types):
@@ -65,6 +168,19 @@ def _read_from_path(path, types):
 
 
 def get_vehicle_name(buckets):
+    if buckets.get('imc6'):
+        raw = buckets['raw']
+        es_list = raw['es']
+        if not es_list:
+            return None
+        auv_src = es_list[0].src
+        for ann in raw['ann']:
+            if ann.src == auv_src:
+                return ann.sys_name
+        for ann in raw['ann']:
+            if ann.sys_type_name in ('UUV', 'USV'):
+                return ann.sys_name
+        return None
     es_msgs = buckets[imcpy.EstimatedState]
     if not es_msgs:
         return None
@@ -73,13 +189,13 @@ def get_vehicle_name(buckets):
         if msg.src == auv_src:
             return msg.sys_name
     for msg in buckets[imcpy.Announce]:
-        if msg.sys_type.name in ("UUV", "AUV", "USV"):
+        if msg.sys_type.name in ('UUV', 'AUV', 'USV'):
             return msg.sys_name
     return None
 
 
-def align_sensor(es_msgs, sensor_msgs):
-    """Nærmeste sensorverdi per EstimatedState-punkt, O(n+m) to-peker."""
+def align_sensor(es_msgs, sensor_msgs, use_raw=False):
+    """Nærmeste sensorverdi per ES-punkt, O(n+m) to-peker."""
     if not sensor_msgs:
         return [None] * len(es_msgs)
     result = []
@@ -96,7 +212,43 @@ def align_sensor(es_msgs, sensor_msgs):
 def lsf_to_points(lsf_path):
     campaign = extract_campaign(lsf_path)
     buckets  = read_msgs(lsf_path)
-    es_msgs  = buckets[imcpy.EstimatedState]
+
+    if buckets.get('imc6'):
+        raw     = buckets['raw']
+        es_msgs = raw['es']
+        if not es_msgs:
+            return []
+        first_ts = datetime.fromtimestamp(es_msgs[0].timestamp, tz=timezone.utc)
+        year     = first_ts.year
+        vehicle  = (get_vehicle_name(buckets) or "auv").lower()
+        sal_vals  = align_sensor(es_msgs, raw['sal'])
+        temp_vals = align_sensor(es_msgs, raw['tmp'])
+        cond_vals = align_sensor(es_msgs, raw['cnd'])
+        name = os.path.basename(os.path.dirname(lsf_path))
+        src  = rel_path(lsf_path)
+        points = []
+        for i, msg in enumerate(es_msgs):
+            lat = math.degrees(msg.lat) + (msg.x / 111320)
+            lon = math.degrees(msg.lon) + (msg.y / (111320 * math.cos(msg.lat)))
+            points.append({
+                "name":           name,
+                "vehicle":        vehicle,
+                "timestamp":      datetime.utcfromtimestamp(msg.timestamp),
+                "depth":          msg.depth,
+                "year":           year,
+                "campaign":       campaign,
+                "salinity":       sal_vals[i],
+                "temperature":    temp_vals[i],
+                "conductivity":   cond_vals[i],
+                "source_path":    src,
+                "speed":          msg.speed,
+                "vessel_transit": msg.speed > 2.5,
+                "geom":           Point(lon, lat, msg.depth),
+            })
+        return points
+
+    # IMC5 — imcpy-path
+    es_msgs = buckets[imcpy.EstimatedState]
     if not es_msgs:
         return []
 
@@ -114,18 +266,21 @@ def lsf_to_points(lsf_path):
     for i, msg in enumerate(es_msgs):
         lat = math.degrees(msg.lat) + (msg.x / 111320)
         lon = math.degrees(msg.lon) + (msg.y / (111320 * math.cos(msg.lat)))
+        spd = math.sqrt(msg.u**2 + msg.v**2 + msg.w**2)
         points.append({
-            "name":         name,
-            "vehicle":      vehicle,
-            "timestamp":    datetime.utcfromtimestamp(msg.timestamp),
-            "depth":        msg.depth,
-            "year":         year,
-            "campaign":     campaign,
-            "salinity":     sal_vals[i],
-            "temperature":  temp_vals[i],
-            "conductivity": cond_vals[i],
-            "source_path":  src,
-            "geom":         Point(lon, lat, msg.depth),
+            "name":           name,
+            "vehicle":        vehicle,
+            "timestamp":      datetime.utcfromtimestamp(msg.timestamp),
+            "depth":          msg.depth,
+            "year":           year,
+            "campaign":       campaign,
+            "salinity":       sal_vals[i],
+            "temperature":    temp_vals[i],
+            "conductivity":   cond_vals[i],
+            "source_path":    src,
+            "speed":          spd,
+            "vessel_transit": spd > 2.5,
+            "geom":           Point(lon, lat, msg.depth),
         })
     return points
 
@@ -141,22 +296,19 @@ for col, typ in [
     ("campaign",     "VARCHAR(255)"),
     ("salinity",     "FLOAT"),
     ("temperature",  "FLOAT"),
-    ("conductivity", "FLOAT"),
-    ("source_path",  "VARCHAR(500)"),
+    ("conductivity",   "FLOAT"),
+    ("source_path",    "VARCHAR(500)"),
+    ("speed",          "FLOAT"),
+    ("vessel_transit", "BOOLEAN"),
 ]:
     cur.execute(f"ALTER TABLE auv_tracks ADD COLUMN IF NOT EXISTS {col} {typ}")
 conn.commit()
 
-# --- Finn filer: foretrekk .lsf over .lsf.gz når begge finnes ---
+# --- Finn filer: inkluder både .lsf og .lsf.gz; MD5-dedup håndterer ekte duplikater ---
 all_lsf = set(glob.glob(f"{DATA_ROOT}/**/*.lsf",    recursive=True))
 all_gz  = set(glob.glob(f"{DATA_ROOT}/**/*.lsf.gz", recursive=True))
 
-lsf_files = list(all_lsf)
-for gz in all_gz:
-    if gz[:-3] not in all_lsf:
-        lsf_files.append(gz)
-
-lsf_files.sort()
+lsf_files = sorted(all_lsf | all_gz)
 
 # Dedupliser på MD5 (samme logg i ulike mapper)
 seen_hashes = set()
@@ -209,12 +361,14 @@ for path in new_files:
         cur.execute(
             """INSERT INTO auv_tracks
                (name, vehicle, timestamp, depth, year, campaign,
-                salinity, temperature, conductivity, source_path, geom)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,ST_GeomFromWKB(%s::geometry,4326))""",
+                salinity, temperature, conductivity, source_path,
+                speed, vessel_transit, geom)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,ST_GeomFromWKB(%s::geometry,4326))""",
             (p["name"], p["vehicle"], p["timestamp"], p["depth"],
              p["year"], p["campaign"],
              p["salinity"], p["temperature"], p["conductivity"],
-             p["source_path"], dumps(p["geom"], hex=True)),
+             p["source_path"], p["speed"], p["vessel_transit"],
+             dumps(p["geom"], hex=True)),
         )
     conn.commit()
     total += len(points)
