@@ -423,5 +423,12 @@ for path in new_files:
           f"år={p0['year']} kampanje={p0['campaign']!r} sal={sal_str}")
 
 print(f"\nFerdig! {total} nye punkter lagt til ({total + sum(1 for _ in ingested)} totalt)")
+
+if total > 0:
+    print("Refresher auv_missions…")
+    cur.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY auv_missions")
+    conn.commit()
+    print("auv_missions oppdatert.")
+
 cur.close()
 conn.close()

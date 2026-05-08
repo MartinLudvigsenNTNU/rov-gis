@@ -5,6 +5,7 @@
     <title>AUV ops AT-334</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; }
         #map { height: 100vh; width: 100%; }
@@ -32,13 +33,151 @@
             transition: transform 0.15s ease;
             pointer-events: none;
         }
+
+        /* --- Søkepanel --- */
+        #search-toggle {
+            position: absolute;
+            top: 10px;
+            left: 210px;
+            z-index: 1001;
+            background: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            font-size: 13px;
+            cursor: pointer;
+        }
+        #search-panel {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            z-index: 1000;
+            background: white;
+            padding: 14px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            width: 300px;
+            font-size: 13px;
+            display: none;
+        }
+        #search-panel h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+        }
+        .sp-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .sp-row label {
+            flex: 0 0 32px;
+            color: #555;
+        }
+        .sp-row input[type=date] {
+            flex: 1;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        #rect-status {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 8px;
+            min-height: 16px;
+        }
+        .sp-btn-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .sp-btn {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: #f5f5f5;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .sp-btn:hover { background: #e8e8e8; }
+        .sp-btn.primary {
+            background: #2277cc;
+            color: white;
+            border-color: #1a5fa0;
+        }
+        .sp-btn.primary:hover { background: #1a5fa0; }
+        #search-results {
+            max-height: 320px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+            margin-top: 4px;
+        }
+        #result-count {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        .result-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            line-height: 1.4;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-item strong { font-size: 12px; }
+        .result-item .meta { font-size: 11px; color: #777; }
+        .result-item .path {
+            font-family: monospace;
+            font-size: 10px;
+            color: #444;
+            word-break: break-all;
+        }
+        #btn-export { width: 100%; margin-top: 8px; }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <div id="title">AUV ops AT-334</div>
+    <button id="search-toggle">Søk i tokter ▼</button>
+
+    <div id="search-panel">
+        <h3>Søk i tokter</h3>
+
+        <div class="sp-btn-row">
+            <button class="sp-btn" id="btn-draw">✏ Tegn rektangel</button>
+            <button class="sp-btn" id="btn-clear-rect">✕ Fjern</button>
+        </div>
+        <div id="rect-status">Ingen rektangel tegnet</div>
+
+        <div class="sp-row">
+            <label>Fra</label>
+            <input type="date" id="date-from">
+        </div>
+        <div class="sp-row">
+            <label>Til</label>
+            <input type="date" id="date-to">
+        </div>
+
+        <div class="sp-btn-row">
+            <button class="sp-btn primary" id="btn-search">Søk</button>
+            <button class="sp-btn" id="btn-clear-all">Nullstill</button>
+        </div>
+
+        <div id="search-results" style="display:none">
+            <div id="result-count"></div>
+            <div id="result-list"></div>
+            <button class="sp-btn" id="btn-export" style="display:none">
+                Eksporter CSV
+            </button>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
     <script>
         var map = L.map('map').setView([70, 15], 5);
 
@@ -118,7 +257,6 @@
                     var label = group.querySelector('.leaflet-control-layers-group-label');
                     if (!label) return;
 
-                    // Underlags-elementer er direkte søsken til label i group-div
                     var sublayerEls = Array.from(group.children).filter(function(el) {
                         return el !== label;
                     });
@@ -218,6 +356,167 @@
             }
         })
         .catch(err => console.warn('Kunne ikke hente GeoServer-lag:', err));
+    </script>
+
+    <!-- Søkepanel -->
+    <script>
+        var GS_AUTH = 'Basic ' + btoa('admin:geoserver');
+        var drawnItems = new L.FeatureGroup().addTo(map);
+        var currentBounds = null;
+        var searchResults  = [];
+
+        // Toggle panel
+        var panel  = document.getElementById('search-panel');
+        var toggle = document.getElementById('search-toggle');
+        toggle.addEventListener('click', function() {
+            var open = panel.style.display === 'block';
+            panel.style.display = open ? 'none' : 'block';
+            toggle.textContent  = 'Søk i tokter ' + (open ? '▼' : '▲');
+        });
+
+        // Leaflet.draw — kun rektangel
+        var drawControl = new L.Control.Draw({
+            draw: {
+                rectangle: { shapeOptions: { color: '#e63946', weight: 2, fillOpacity: 0.05 } },
+                polygon: false, circle: false, circlemarker: false,
+                marker: false, polyline: false
+            },
+            edit: false
+        });
+        map.addControl(drawControl);
+
+        document.getElementById('btn-draw').addEventListener('click', function() {
+            new L.Draw.Rectangle(map, drawControl.options.draw.rectangle).enable();
+        });
+
+        map.on(L.Draw.Event.CREATED, function(e) {
+            drawnItems.clearLayers();
+            drawnItems.addLayer(e.layer);
+            currentBounds = e.layer.getBounds();
+            var bb = currentBounds;
+            document.getElementById('rect-status').textContent =
+                'Rektangel: ' +
+                bb.getWest().toFixed(3) + '°Ø, ' + bb.getSouth().toFixed(3) + '°N  →  ' +
+                bb.getEast().toFixed(3) + '°Ø, ' + bb.getNorth().toFixed(3) + '°N';
+        });
+
+        document.getElementById('btn-clear-rect').addEventListener('click', clearRect);
+
+        function clearRect() {
+            drawnItems.clearLayers();
+            currentBounds = null;
+            document.getElementById('rect-status').textContent = 'Ingen rektangel tegnet';
+        }
+
+        document.getElementById('btn-clear-all').addEventListener('click', function() {
+            clearRect();
+            document.getElementById('date-from').value = '';
+            document.getElementById('date-to').value   = '';
+            document.getElementById('search-results').style.display = 'none';
+            searchResults = [];
+        });
+
+        // Søk
+        document.getElementById('btn-search').addEventListener('click', function() {
+            var filters = [];
+
+            if (currentBounds) {
+                var b = currentBounds;
+                filters.push(
+                    'BBOX(geom,' + b.getWest() + ',' + b.getSouth() + ',' +
+                    b.getEast() + ',' + b.getNorth() + ",'EPSG:4326')"
+                );
+            }
+            var df = document.getElementById('date-from').value;
+            var dt = document.getElementById('date-to').value;
+            if (df) filters.push("end_time >= '" + df + "'");
+            if (dt) filters.push("start_time <= '" + dt + "'");
+
+            if (!filters.length) {
+                alert('Tegn et rektangel eller velg en datoperiode.');
+                return;
+            }
+
+            var url = '/geoserver/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+                      '&TYPENAMES=NTNU:auv_missions&outputFormat=application/json&count=2000' +
+                      '&CQL_FILTER=' + encodeURIComponent(filters.join(' AND '));
+
+            var resDiv = document.getElementById('search-results');
+            resDiv.style.display = 'block';
+            document.getElementById('result-count').textContent = 'Søker…';
+            document.getElementById('result-list').innerHTML    = '';
+            document.getElementById('btn-export').style.display = 'none';
+
+            fetch(url, { headers: { 'Authorization': GS_AUTH } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    searchResults = (data.features || [])
+                        .map(function(f) { return f.properties; })
+                        .sort(function(a, b) {
+                            return (a.start_time || '') > (b.start_time || '') ? 1 : -1;
+                        });
+                    renderResults(searchResults);
+                })
+                .catch(function(err) {
+                    document.getElementById('result-count').textContent = 'Feil: ' + err;
+                });
+        });
+
+        function renderResults(results) {
+            var countEl  = document.getElementById('result-count');
+            var listEl   = document.getElementById('result-list');
+            var exportEl = document.getElementById('btn-export');
+
+            if (!results.length) {
+                countEl.textContent     = 'Ingen tokter funnet.';
+                listEl.innerHTML        = '';
+                exportEl.style.display  = 'none';
+                return;
+            }
+
+            countEl.textContent    = results.length + ' tokter funnet';
+            exportEl.style.display = '';
+
+            listEl.innerHTML = results.map(function(r) {
+                var date = (r.start_time || '').substring(0, 10);
+                return '<div class="result-item">' +
+                    '<strong>' + escHtml(r.name || '') + '</strong>' +
+                    '<div class="meta">' +
+                        escHtml(r.vehicle || '') + ' &bull; ' + date +
+                        ' &bull; ' + (r.point_count || 0) + ' pkt' +
+                    '</div>' +
+                    '<div class="path">' + escHtml(r.source_path || '') + '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function escHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // CSV-eksport
+        document.getElementById('btn-export').addEventListener('click', function() {
+            if (!searchResults.length) return;
+            var cols = ['name', 'vehicle', 'year', 'campaign',
+                        'source_path', 'start_time', 'end_time', 'point_count'];
+            var lines = [cols.join(',')];
+            searchResults.forEach(function(r) {
+                lines.push(cols.map(function(c) {
+                    var v = (r[c] !== null && r[c] !== undefined) ? String(r[c]) : '';
+                    return /[,"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+                }).join(','));
+            });
+            var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            var a    = Object.assign(document.createElement('a'), {
+                href:     URL.createObjectURL(blob),
+                download: 'tokter.csv'
+            });
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
     </script>
 </body>
 </html>
