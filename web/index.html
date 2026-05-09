@@ -178,40 +178,67 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/proj4@2.9.0/dist/proj4.js"></script>
+    <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
     <script>
-        var map = L.map('map').setView([70, 15], 5);
+        // EPSG:25833 — UTM sone 33N (NPI sitt native koordinatsystem for Svalbard)
+        // Resolusjoner og origin fra NPI WMTS capabilities (default028mm tile matrix)
+        var crs25833 = new L.Proj.CRS(
+            'EPSG:25833',
+            '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs',
+            {
+                origin: [-5120900.0, 9998100.0],
+                resolutions: [
+                    21674.710016083973, 10837.355008041986, 5418.677504020993,
+                    2709.3387520104966, 1354.6693760052483, 677.3346880026241,
+                    338.6673440013121,  169.33367200065604, 84.66683600032802,
+                    42.33341800016401,  21.166709000082005, 10.583354500041002,
+                    5.291677250020501,  2.6458386250102506, 1.3229193125051253,
+                    0.6614596562525626, 0.3307298281262813, 0.16536491406314066
+                ]
+            }
+        );
 
-        var cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap © CARTO', maxZoom: 19
-        });
-        var cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap © CARTO', maxZoom: 19
-        });
-        var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri World Imagery', maxZoom: 19
-        });
+        var map = L.map('map', { crs: crs25833 }).setView([78.2, 15.5], 5);
+
+        // NPI Svalbard basiskart — native WMTS i EPSG:25833, ingen reprosjeksjon
+        var npiSvalbard = L.tileLayer(
+            'https://geodata.npolar.no/arcgis/rest/services/Basisdata/NP_Basiskart_Svalbard_WMTS_25833/MapServer/tile/{z}/{y}/{x}',
+            { attribution: '© Norsk Polarinstitutt', maxZoom: 17, minZoom: 0 }
+        );
+
+        // WMS-lag fungerer med EPSG:25833 via server-side reprosjeksjon
+        var satellite = L.tileLayer.wms(
+            'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/WmsServer', {
+                layers: '0', format: 'image/png',
+                transparent: false, attribution: '© Esri World Imagery'
+            }
+        );
         var gebco = L.tileLayer.wms('https://wms.gebco.net/mapserv?', {
             layers: 'GEBCO_LATEST', format: 'image/png',
             transparent: false, attribution: '© GEBCO 2024'
         });
-        var kartverketTopo = L.tileLayer(
-            'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',
-            { attribution: '© Kartverket', maxZoom: 18 }
+        var kartverketTopo = L.tileLayer.wms(
+            'https://openwms.statkart.no/skwms1/wms.topo4', {
+                layers: 'topo4_WMS', format: 'image/png',
+                transparent: false, attribution: '© Kartverket'
+            }
         );
-        var kartverketGraatone = L.tileLayer(
-            'https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png',
-            { attribution: '© Kartverket', maxZoom: 18 }
+        var kartverketGraatone = L.tileLayer.wms(
+            'https://openwms.statkart.no/skwms1/wms.topo4', {
+                layers: 'topo4graatone_WMS', format: 'image/png',
+                transparent: false, attribution: '© Kartverket'
+            }
         );
         var emodnetBathy = L.tileLayer.wms('https://ows.emodnet-bathymetry.eu/wms', {
             layers: 'emodnet:mean_atlas_land', format: 'image/png',
             transparent: true, attribution: '© EMODnet', opacity: 0.7
         });
 
-        cartoDark.addTo(map);
+        npiSvalbard.addTo(map);
 
         var baseMaps = {
-            "Kart (lyst)": cartoLight,
-            "Kart (mørkt)": cartoDark,
+            "Svalbard topo (NPI)": npiSvalbard,
             "Satellitt (Esri)": satellite,
             "GEBCO Batymetri": gebco,
             "Norgeskart": kartverketTopo,
@@ -332,8 +359,7 @@
                             format:      'image/png',
                             transparent: true,
                             attribution: 'NTNU ROV/AUV GIS',
-                            CQL_FILTER:  'year=' + year,
-                            TILED:       true
+                            CQL_FILTER:  'year=' + year
                         }
                     );
                 });
