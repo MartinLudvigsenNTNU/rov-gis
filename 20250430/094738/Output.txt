@@ -1,0 +1,10 @@
+[2025/04/30 09:47:39] - WRN [Supervisors.Vehicle] >> now in 'SERVICE' mode
+[2025/04/30 09:47:49] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:47:50] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:48:19] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:48:20] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:48:42] - MSG [Plan.Engine] >> set plan (250430test4) -- OK (new entry)
+[2025/04/30 09:48:45] - MSG [Plan.Engine] >> request -- Start Plan (250430test4)
+[2025/04/30 09:48:45] - MSG [Plan.Engine] >> plan initializing: 250430test4
+[2025/04/30 09:48:45] - MSG [Transports.Logging] >> log stopped '20250430/094738'
+[2025/04/30 09:48:45] - MSG [Transports.Logging] >> log started '20250430/094845_250430test4'

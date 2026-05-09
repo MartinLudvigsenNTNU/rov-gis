@@ -1,0 +1,25 @@
+[2025/04/30 09:48:46] - WRN [Supervisors.Vehicle] >> now in 'CALIBRATION' mode
+[2025/04/30 09:48:49] - MSG [Plan.Engine] >> Goto1: executing maneuver
+[2025/04/30 09:48:49] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:48:50] - WRN [Supervisors.Vehicle] >> now in 'MANEUVERING' mode
+[2025/04/30 09:48:50] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44824 10.35648 to 63.44568 10.35706
+[2025/04/30 09:48:50] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:49:20] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:49:21] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:49:33] - MSG [Transports.UDP] >> deactivating transmission to node 'ccu-aurllab-80-25'
+[2025/04/30 09:49:43] - MSG [Transports.UDP] >> activating transmission to node 'ccu-aurllab-80-25'
+[2025/04/30 09:49:51] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:49:52] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:50:22] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:50:23] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:50:25] - MSG [Plan.Engine] >> set plan (250430test5) -- OK (new entry)
+[2025/04/30 09:50:37] - MSG [Navigation.AUV.Navigation] >> estimating error of 0.30% (0.5/173.0m) in 90s
+[2025/04/30 09:50:54] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:50:55] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:51:18] - MSG [Transports.UDP] >> deactivating transmission to node 'ccu-aurllab-80-25'
+[2025/04/30 09:51:23] - MSG [Transports.UDP] >> activating transmission to node 'ccu-aurllab-80-25'
+[2025/04/30 09:51:25] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:51:26] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:51:42] - MSG [Plan.Engine] >> plan completed
+[2025/04/30 09:51:42] - MSG [Transports.Logging] >> log stopped '20250430/094845_250430test4'
+[2025/04/30 09:51:42] - MSG [Transports.Logging] >> log started '20250430/095142'

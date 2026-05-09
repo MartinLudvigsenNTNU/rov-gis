@@ -1,0 +1,37 @@
+[2025/04/30 08:24:54] - WRN [Supervisors.Vehicle] >> now in 'CALIBRATION' mode
+[2025/04/30 08:24:57] - MSG [Plan.Engine] >> Goto1: executing maneuver
+[2025/04/30 08:24:58] - WRN [Supervisors.Vehicle] >> now in 'MANEUVERING' mode
+[2025/04/30 08:24:58] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44386 10.35436 to 63.44309 10.35325
+[2025/04/30 08:25:13] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:25:14] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:25:43] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:25:44] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:26:02] - MSG [Plan.Engine] >> schedule: SILCAM active on time, +27.0 seconds
+[2025/04/30 08:26:08] - MSG [Transports.UDP] >> deactivating transmission to node 'ccu-aurllab-80-25'
+[2025/04/30 08:26:13] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:26:14] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:26:31] - MSG [Plan.Engine] >> Goto2: executing maneuver
+[2025/04/30 08:26:31] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44309 10.35325 to 63.44333 10.35936
+[2025/04/30 08:26:43] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:26:44] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:27:14] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:27:15] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:27:45] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:27:46] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:28:17] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:28:18] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:28:47] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:28:48] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:29:18] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:29:19] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:29:49] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:29:50] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:30:20] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 08:30:21] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 08:30:25] - ERR [Monitors.OperationalLimits] >> depth -- operational limit breached: 80.07 > 80.00
+[2025/04/30 08:30:25] - MSG [Monitors.Entities] >> Operational Limits : Normal -> Failure | depth:80.07 > 80.00;
+[2025/04/30 08:30:26] - WRN [Supervisors.Vehicle] >> vehicle errors: Operational Limits
+[2025/04/30 08:30:26] - WRN [Supervisors.Vehicle] >> now in 'ERROR' mode
+[2025/04/30 08:30:26] - ERR [Plan.Engine] >> reply -- Start Plan (250430test02) -- Operational Limits: depth:80.07 > 80.00;
+[2025/04/30 08:30:26] - MSG [Transports.Logging] >> log stopped '20250430/082453_250430test02'
+[2025/04/30 08:30:26] - MSG [Transports.Logging] >> log started '20250430/083026'

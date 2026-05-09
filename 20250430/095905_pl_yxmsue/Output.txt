@@ -1,0 +1,23 @@
+[2025/04/30 09:59:06] - WRN [Supervisors.Vehicle] >> now in 'CALIBRATION' mode
+[2025/04/30 09:59:09] - MSG [Plan.Engine] >> Goto1: executing maneuver
+[2025/04/30 09:59:10] - WRN [Supervisors.Vehicle] >> now in 'MANEUVERING' mode
+[2025/04/30 09:59:10] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44302 10.35649 to 63.44119 10.35140
+[2025/04/30 09:59:34] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:59:35] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 10:00:03] - MSG [Transports.UDP] >> deactivating transmission to node 'ccu-aurllab-80-25'
+[2025/04/30 10:00:04] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 10:00:05] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 10:00:08] - MSG [Transports.UDP] >> activating transmission to node 'ccu-aurllab-80-25'
+[2025/04/30 10:00:34] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 10:00:35] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 10:01:05] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 10:01:06] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 10:01:35] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 10:01:36] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 10:01:46] - ERR [Monitors.OperationalLimits] >> Operational Area -- operational limit breached: 0.22 > 0.00
+[2025/04/30 10:01:46] - MSG [Monitors.Entities] >> Operational Limits : Normal -> Failure | Operational Area:0.22 > 0.00;
+[2025/04/30 10:01:47] - WRN [Supervisors.Vehicle] >> vehicle errors: Operational Limits
+[2025/04/30 10:01:47] - WRN [Supervisors.Vehicle] >> now in 'ERROR' mode
+[2025/04/30 10:01:47] - ERR [Plan.Engine] >> reply -- Start Plan (pl_yxmsue) -- Operational Limits: Operational Area:0.22 > 0.00;
+[2025/04/30 10:01:47] - MSG [Transports.Logging] >> log stopped '20250430/095905_pl_yxmsue'
+[2025/04/30 10:01:47] - MSG [Transports.Logging] >> log started '20250430/100147'

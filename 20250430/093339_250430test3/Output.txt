@@ -1,0 +1,54 @@
+[2025/04/30 09:33:39] - WRN [Supervisors.Vehicle] >> now in 'CALIBRATION' mode
+[2025/04/30 09:33:59] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:34:00] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:34:29] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:34:30] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:34:36] - MSG [Plan.Engine] >> schedule: SILCAM active on time, +2.4 seconds
+[2025/04/30 09:34:36] - MSG [Plan.Engine] >> Goto3: executing maneuver
+[2025/04/30 09:34:37] - WRN [Supervisors.Vehicle] >> now in 'MANEUVERING' mode
+[2025/04/30 09:34:37] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44423 10.35529 to 63.44435 10.35519
+[2025/04/30 09:34:50] - MSG [Plan.Engine] >> Goto1: executing maneuver
+[2025/04/30 09:34:51] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44435 10.35519 to 63.44474 10.35522
+[2025/04/30 09:35:00] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:35:01] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:35:27] - MSG [Plan.Engine] >> Goto2: executing maneuver
+[2025/04/30 09:35:27] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44474 10.35522 to 63.44795 10.35538
+[2025/04/30 09:35:31] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:35:32] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:35:47] - MSG [Transports.UDP] >> deactivating transmission to node 'ccu-aurllab-80-25'
+[2025/04/30 09:36:02] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:36:03] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:36:32] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:36:33] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:37:03] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:37:04] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:37:34] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:37:35] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:38:05] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:38:06] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:38:37] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:38:38] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:39:07] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:39:08] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:39:38] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:39:39] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:40:09] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:40:10] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:40:40] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:40:41] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:41:10] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:41:11] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:41:41] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:41:42] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:41:55] - MSG [Plan.Engine] >> StationKeeping1: executing maneuver
+[2025/04/30 09:41:55] - MSG [Maneuver.Multiplexer] >> outside safe region (distance: 108.7 m)
+[2025/04/30 09:41:55] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44791 10.35537 to 63.44713 10.35668
+[2025/04/30 09:42:12] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:42:13] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:42:14] - ERR [Monitors.OperationalLimits] >> depth -- operational limit breached: 50.07 > 50.00
+[2025/04/30 09:42:14] - MSG [Monitors.Entities] >> Operational Limits : Normal -> Failure | depth:50.07 > 50.00;
+[2025/04/30 09:42:15] - WRN [Supervisors.Vehicle] >> vehicle errors: Operational Limits
+[2025/04/30 09:42:15] - WRN [Supervisors.Vehicle] >> now in 'ERROR' mode
+[2025/04/30 09:42:15] - ERR [Plan.Engine] >> reply -- Start Plan (250430test3) -- Operational Limits: depth:50.07 > 50.00;
+[2025/04/30 09:42:15] - MSG [Transports.Logging] >> log stopped '20250430/093339_250430test3'
+[2025/04/30 09:42:15] - MSG [Transports.Logging] >> log started '20250430/094215'

@@ -1,0 +1,24 @@
+[2025/04/30 09:52:23] - WRN [Supervisors.Vehicle] >> now in 'CALIBRATION' mode
+[2025/04/30 09:52:25] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:52:26] - MSG [Plan.Engine] >> Goto1: executing maneuver
+[2025/04/30 09:52:26] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:52:27] - WRN [Supervisors.Vehicle] >> now in 'MANEUVERING' mode
+[2025/04/30 09:52:27] - MSG [Control.Path.VectorField] >> path (lat/lon): 63.44570 10.35698 to 63.44238 10.35650
+[2025/04/30 09:52:33] - MSG [Navigation.AUV.Navigation] >> estimating error of 0.40% (0.5/128.0m) in 113s
+[2025/04/30 09:52:56] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:52:57] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:53:27] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:53:28] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:53:58] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:53:59] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:54:09] - MSG [Navigation.AUV.Navigation] >> estimating error of 0.41% (0.7/167.1m) in 92s
+[2025/04/30 09:54:29] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:54:30] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:54:59] - DBG [Transports.Evologics] >> modem busy
+[2025/04/30 09:55:00] - DBG [Transports.Evologics] >> modem idle
+[2025/04/30 09:55:16] - MSG [Plan.Engine] >> request -- Stop Plan ()
+[2025/04/30 09:55:16] - MSG [Plan.Engine] >> reply -- Stop Plan (250430test5) -- OK
+[2025/04/30 09:55:16] - MSG [Plan.Engine] >> plan stopped
+[2025/04/30 09:55:17] - WRN [Supervisors.Vehicle] >> now in 'SERVICE' mode
+[2025/04/30 09:55:17] - MSG [Transports.Logging] >> log stopped '20250430/095222_250430test5'
+[2025/04/30 09:55:17] - MSG [Transports.Logging] >> log started '20250430/095517'
