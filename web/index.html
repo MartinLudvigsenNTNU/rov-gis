@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>AUV ops AT-334</title>
@@ -34,11 +34,28 @@
             pointer-events: none;
         }
 
-        /* --- Søkepanel --- */
-        #search-toggle {
+        /* --- Search panel --- */
+        #dashboard-btn {
             position: absolute;
             top: 10px;
             left: 210px;
+            z-index: 1001;
+            background: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #333;
+            display: inline-block;
+        }
+        #dashboard-btn:hover { background: #f0f0f0; }
+        #search-toggle {
+            position: absolute;
+            top: 10px;
+            left: 320px;
             z-index: 1001;
             background: white;
             border: none;
@@ -141,36 +158,37 @@
 <body>
     <div id="map"></div>
     <div id="title">AUV ops AT-334</div>
-    <button id="search-toggle">Søk i tokter ▼</button>
+    <a id="dashboard-btn" href="dashboard.html" target="_blank">Dashboard ↗</a>
+    <button id="search-toggle">Search missions ▼</button>
 
     <div id="search-panel">
-        <h3>Søk i tokter</h3>
+        <h3>Search missions</h3>
 
         <div class="sp-btn-row">
-            <button class="sp-btn" id="btn-draw">✏ Tegn rektangel</button>
-            <button class="sp-btn" id="btn-clear-rect">✕ Fjern</button>
+            <button class="sp-btn" id="btn-draw">✏ Draw rectangle</button>
+            <button class="sp-btn" id="btn-clear-rect">✕ Clear</button>
         </div>
-        <div id="rect-status">Ingen rektangel tegnet</div>
+        <div id="rect-status">No rectangle drawn</div>
 
         <div class="sp-row">
-            <label>Fra</label>
+            <label>From</label>
             <input type="date" id="date-from">
         </div>
         <div class="sp-row">
-            <label>Til</label>
+            <label>To</label>
             <input type="date" id="date-to">
         </div>
 
         <div class="sp-btn-row">
-            <button class="sp-btn primary" id="btn-search">Søk</button>
-            <button class="sp-btn" id="btn-clear-all">Nullstill</button>
+            <button class="sp-btn primary" id="btn-search">Search</button>
+            <button class="sp-btn" id="btn-clear-all">Reset</button>
         </div>
 
         <div id="search-results" style="display:none">
             <div id="result-count"></div>
             <div id="result-list"></div>
             <button class="sp-btn" id="btn-export" style="display:none">
-                Eksporter CSV
+                Export CSV
             </button>
         </div>
     </div>
@@ -178,74 +196,37 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-    <script src="https://unpkg.com/proj4@2.9.0/dist/proj4.js"></script>
-    <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
     <script>
-        // EPSG:25833 — UTM sone 33N (NPI sitt native koordinatsystem for Svalbard)
-        // Resolusjoner og origin fra NPI WMTS capabilities (default028mm tile matrix)
-        var crs25833 = new L.Proj.CRS(
-            'EPSG:25833',
-            '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs',
-            {
-                origin: [-5120900.0, 9998100.0],
-                resolutions: [
-                    21674.710016083973, 10837.355008041986, 5418.677504020993,
-                    2709.3387520104966, 1354.6693760052483, 677.3346880026241,
-                    338.6673440013121,  169.33367200065604, 84.66683600032802,
-                    42.33341800016401,  21.166709000082005, 10.583354500041002,
-                    5.291677250020501,  2.6458386250102506, 1.3229193125051253,
-                    0.6614596562525626, 0.3307298281262813, 0.16536491406314066
-                ]
-            }
-        );
+        var map = L.map('map').setView([70, 15], 5);
 
-        var map = L.map('map', { crs: crs25833 }).setView([78.2, 15.5], 5);
-
-        // NPI Svalbard basiskart — native WMTS i EPSG:25833, ingen reprosjeksjon
-        var npiSvalbard = L.tileLayer(
-            'https://geodata.npolar.no/arcgis/rest/services/Basisdata/NP_Basiskart_Svalbard_WMTS_25833/MapServer/tile/{z}/{y}/{x}',
-            { attribution: '© Norsk Polarinstitutt', maxZoom: 17, minZoom: 0 }
-        );
-
-        // WMS-lag fungerer med EPSG:25833 via server-side reprosjeksjon
-        var satellite = L.tileLayer.wms(
-            'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/WmsServer', {
-                layers: '0', format: 'image/png',
-                transparent: false, attribution: '© Esri World Imagery'
-            }
-        );
+        var cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+        });
+        var cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+        });
+        var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© Esri World Imagery', maxZoom: 19
+        });
         var gebco = L.tileLayer.wms('https://wms.gebco.net/mapserv?', {
             layers: 'GEBCO_LATEST', format: 'image/png',
             transparent: false, attribution: '© GEBCO 2024'
         });
-        var kartverketTopo = L.tileLayer.wms(
-            'https://openwms.statkart.no/skwms1/wms.topo4', {
-                layers: 'topo4_WMS', format: 'image/png',
-                transparent: false, attribution: '© Kartverket'
-            }
-        );
-        var kartverketGraatone = L.tileLayer.wms(
-            'https://openwms.statkart.no/skwms1/wms.topo4', {
-                layers: 'topo4graatone_WMS', format: 'image/png',
-                transparent: false, attribution: '© Kartverket'
-            }
-        );
         var emodnetBathy = L.tileLayer.wms('https://ows.emodnet-bathymetry.eu/wms', {
             layers: 'emodnet:mean_atlas_land', format: 'image/png',
             transparent: true, attribution: '© EMODnet', opacity: 0.7
         });
 
-        npiSvalbard.addTo(map);
+        cartoDark.addTo(map);
 
         var baseMaps = {
-            "Svalbard topo (NPI)": npiSvalbard,
-            "Satellitt (Esri)": satellite,
-            "GEBCO Batymetri": gebco,
-            "Norgeskart": kartverketTopo,
-            "Norgeskart (gråtone)": kartverketGraatone,
+            "Map (light)": cartoLight,
+            "Map (dark)": cartoDark,
+            "Satellite (Esri)": satellite,
+            "GEBCO Bathymetry": gebco,
         };
 
-        // Farge per farkost og år — matcher GeoServer SLD-stilene
+        // Colour per vehicle and year — matches GeoServer SLD styles
         var vehicleConfig = {
             'auv_fridtjof': {
                 label: 'lauv-fridtjof',
@@ -338,7 +319,7 @@
         })
         .then(({ geoLayers, details }) => {
             var groupedOverlays = {
-                'Batymetri': { 'EMODnet': emodnetBathy }
+                'Bathymetry': { 'EMODnet': emodnetBathy }
             };
 
             var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -359,7 +340,8 @@
                             format:      'image/png',
                             transparent: true,
                             attribution: 'NTNU ROV/AUV GIS',
-                            CQL_FILTER:  'year=' + year
+                            CQL_FILTER:  'year=' + year,
+                            TILED:       true
                         }
                     );
                 });
@@ -382,10 +364,10 @@
                 map.fitBounds([[minY, minX], [maxY, maxX]], { padding: [20, 20] });
             }
         })
-        .catch(err => console.warn('Kunne ikke hente GeoServer-lag:', err));
+        .catch(err => console.warn('Could not fetch GeoServer layers:', err));
     </script>
 
-    <!-- Søkepanel -->
+    <!-- Search panel -->
     <script>
         var GS_AUTH = 'Basic ' + btoa('admin:geoserver');
         var drawnItems = new L.FeatureGroup().addTo(map);
@@ -406,10 +388,10 @@
         toggle.addEventListener('click', function() {
             var open = panel.style.display === 'block';
             panel.style.display = open ? 'none' : 'block';
-            toggle.textContent  = 'Søk i tokter ' + (open ? '▼' : '▲');
+            toggle.textContent  = 'Search missions ' + (open ? '▼' : '▲');
         });
 
-        // Leaflet.draw — kun rektangel
+        // Leaflet.draw — rectangle only
         var drawControl = new L.Control.Draw({
             draw: {
                 rectangle: { shapeOptions: { color: '#e63946', weight: 2, fillOpacity: 0.05 } },
@@ -432,7 +414,7 @@
             document.getElementById('rect-status').textContent =
                 bb.getWest().toFixed(3) + '°Ø, ' + bb.getSouth().toFixed(3) + '°N  →  ' +
                 bb.getEast().toFixed(3) + '°Ø, ' + bb.getNorth().toFixed(3) + '°N';
-            console.log('[søk] rektangel satt:', currentBounds.toBBoxString());
+            console.log('[search] rectangle set:', currentBounds.toBBoxString());
         });
 
         document.getElementById('btn-clear-rect').addEventListener('click', clearRect);
@@ -440,7 +422,7 @@
         function clearRect() {
             drawnItems.clearLayers();
             currentBounds = null;
-            document.getElementById('rect-status').textContent = 'Ingen rektangel tegnet';
+            document.getElementById('rect-status').textContent = 'No rectangle drawn';
         }
 
         document.getElementById('btn-clear-all').addEventListener('click', function() {
@@ -451,7 +433,7 @@
             searchResults = [];
         });
 
-        // Søk
+        // Search
         document.getElementById('btn-search').addEventListener('click', function() {
             var filters = [];
 
@@ -468,7 +450,7 @@
             if (dt) filters.push("start_time <= '" + dt + "'");
 
             if (!filters.length) {
-                showSearchError('Tegn et rektangel eller velg en datoperiode.');
+                showSearchError('Draw a rectangle or select a date range.');
                 return;
             }
 
@@ -482,7 +464,7 @@
 
             var resDiv = document.getElementById('search-results');
             resDiv.style.display = 'block';
-            document.getElementById('result-count').textContent = 'Søker…';
+            document.getElementById('result-count').textContent = 'Searching…';
             document.getElementById('result-list').innerHTML    = '';
             document.getElementById('btn-export').style.display = 'none';
 
@@ -514,13 +496,13 @@
             var exportEl = document.getElementById('btn-export');
 
             if (!results.length) {
-                countEl.textContent     = 'Ingen tokter funnet.';
+                countEl.textContent     = 'No missions found.';
                 listEl.innerHTML        = '';
                 exportEl.style.display  = 'none';
                 return;
             }
 
-            countEl.textContent    = results.length + ' tokter funnet';
+            countEl.textContent    = results.length + ' missions found';
             exportEl.style.display = '';
 
             listEl.innerHTML = results.map(function(r) {
@@ -529,7 +511,7 @@
                     '<strong>' + escHtml(r.name || '') + '</strong>' +
                     '<div class="meta">' +
                         escHtml(r.vehicle || '') + ' &bull; ' + date +
-                        ' &bull; ' + (r.point_count || 0) + ' pkt' +
+                        ' &bull; ' + (r.point_count || 0) + ' pts' +
                     '</div>' +
                     '<div class="path">' + escHtml(r.source_path || '') + '</div>' +
                     '</div>';
@@ -557,7 +539,7 @@
             var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
             var a    = Object.assign(document.createElement('a'), {
                 href:     URL.createObjectURL(blob),
-                download: 'tokter.csv'
+                download: 'missions.csv'
             });
             document.body.appendChild(a);
             a.click();

@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS auv_tracks (
     temperature   FLOAT,
     conductivity  FLOAT,
     source_path   VARCHAR(500),
+    speed         FLOAT,
+    vessel_transit BOOLEAN,
+    aborted       BOOLEAN DEFAULT false,
     geom          GEOMETRY(PointZ, 4326)
 );
 

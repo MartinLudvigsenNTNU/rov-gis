@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard — AUV ops AT-334</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: #f4f6f9;
+            color: #222;
+            font-size: 14px;
+        }
+        header {
+            background: #1a1a2e;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+        header a {
+            margin-left: auto;
+            color: #aac4ff;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        header a:hover { text-decoration: underline; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+        /* ── Nøkkeltall ── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .kpi {
+            background: white;
+            border-radius: 8px;
+            padding: 20px 18px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            text-align: center;
+        }
+        .kpi .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a4fa0;
+            line-height: 1.1;
+        }
+        .kpi .label {
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .kpi.loading .value { color: #ccc; }
+
+        /* ── Diagrammer ── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+        .chart-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        }
+        .chart-card h2 {
+            margin: 0 0 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #444;
+        }
+        .chart-wrap { position: relative; height: 240px; }
+
+        /* ── Systemstatus ── */
+        .status-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        }
+        .status-card h2 {
+            margin: 0 0 14px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #444;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            gap: 8px 24px;
+            align-items: center;
+        }
+        .status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+            display: inline-block;
+        }
+        .status-dot.up   { background: #22c55e; }
+        .status-dot.down { background: #ef4444; }
+        .status-name { font-weight: 500; }
+        .status-msg  { font-size: 12px; color: #888; }
+
+        /* ── Sensor table ── */
+        .sensor-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            margin-bottom: 28px;
+            overflow-x: auto;
+        }
+        .sensor-card h2 {
+            margin: 0 0 4px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #444;
+        }
+        .sensor-card .subtitle {
+            font-size: 11px;
+            color: #999;
+            margin: 0 0 14px;
+        }
+        .sensor-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 12px;
+        }
+        .sensor-table th {
+            background: #1F3864;
+            color: white;
+            padding: 7px 10px;
+            text-align: center;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .sensor-table th.row-header {
+            text-align: left;
+            min-width: 170px;
+        }
+        .sensor-table td {
+            padding: 6px 10px;
+            text-align: center;
+            border-bottom: 1px solid #eef0f4;
+            white-space: nowrap;
+        }
+        .sensor-table td.row-label {
+            text-align: left;
+            font-weight: 500;
+            color: #333;
+            background: #f8f9fc;
+        }
+        .sensor-table tr:hover td { background: #f0f4fb; }
+        .sensor-table tr:hover td.row-label { background: #e8edf7; }
+        .sensor-table td.km {
+            color: #1a4fa0;
+            font-variant-numeric: tabular-nums;
+        }
+        .sensor-table td.none { color: #ccc; font-size: 14px; }
+        .sensor-table .total-col {
+            background: #eef3fa;
+            font-weight: 600;
+            border-left: 2px solid #c0cfe8;
+        }
+        .sensor-table th.total-col {
+            background: #16305a;
+            border-left: 2px solid #c0cfe8;
+        }
+        .sensor-table tr.total-row td {
+            background: #e6edf8;
+            font-weight: 600;
+            border-top: 2px solid #c0cfe8;
+        }
+        .sensor-table tr.total-row td.row-label {
+            background: #dce5f5;
+        }
+
+        @media (max-width: 680px) {
+            .kpi-grid    { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Dashboard — AUV ops AT-334</h1>
+    <a href="index.html">← Back to map</a>
+</header>
+
+<div class="container">
+
+    <!-- Key numbers -->
+    <div class="kpi-grid">
+        <div class="kpi loading" id="kpi-missions">
+            <div class="value">—</div>
+            <div class="label">Missions</div>
+        </div>
+        <div class="kpi loading" id="kpi-distance">
+            <div class="value">—</div>
+            <div class="label">Sailed distance (km)</div>
+        </div>
+        <div class="kpi loading" id="kpi-vehicles">
+            <div class="value">—</div>
+            <div class="label">Vehicles</div>
+        </div>
+        <div class="kpi loading" id="kpi-years">
+            <div class="value">—</div>
+            <div class="label">Years with data</div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h2>Sailed distance per year (km)</h2>
+            <div class="chart-wrap">
+                <canvas id="chart-year"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h2>Dive time per vehicle (hours at depth &gt; 1 m)</h2>
+            <div class="chart-wrap">
+                <canvas id="chart-vehicle"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensor × year table -->
+    <div class="sensor-card">
+        <h2>Sensor × year — accumulated km (vessel_transit=false)</h2>
+        <p class="subtitle">Sensor availability per vehicle hardcoded from IMC message analysis. km computed from GPS tracks in PostGIS.</p>
+        <div id="sensor-table-wrap">Loading…</div>
+    </div>
+
+    <!-- Systemstatus -->
+    <div class="status-card">
+        <h2>System status</h2>
+        <div class="status-grid" id="status-grid">
+            <span class="status-dot" id="dot-gs"></span>
+            <span class="status-name">GeoServer</span>
+            <span class="status-msg" id="msg-gs">Checking…</span>
+
+            <span class="status-dot" id="dot-pg"></span>
+            <span class="status-name">PostGIS</span>
+            <span class="status-msg" id="msg-pg">Checking…</span>
+
+            <span class="status-dot" id="dot-gwc"></span>
+            <span class="status-name">GeoWebCache</span>
+            <span class="status-msg" id="msg-gwc">Checking…</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const GS  = '/geoserver';
+const AUTH = 'Basic ' + btoa('admin:geoserver');
+
+// ── Colour per vehicle (mirrors vehicleConfig in index.html) ───────────────
+const vehicleColors = {
+    'lauv-fridtjof': '#2277cc',
+    'lauv-Harald':   '#ff8833',
+    'lauv-harald':   '#ff8833',
+    'lauv-roald':    '#00cc66',
+    'lauv-thor':     '#aa44ff',
+    'lauv-marie':    '#00cccc',
+};
+function vehicleColor(name) {
+    return vehicleColors[name] || vehicleColors[name.toLowerCase()] || '#999';
+}
+
+function fmt(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(0) + 'k';
+    return String(n);
+}
+
+function setKpi(id, value) {
+    const el = document.getElementById(id);
+    el.querySelector('.value').textContent = value;
+    el.classList.remove('loading');
+}
+
+// ── Missions + distance KPI + sailed distance chart ───────────────────────
+Promise.all([
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+          '&TYPENAMES=NTNU:auv_missions&outputFormat=application/json&count=5000')
+        .then(r => r.json()),
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+          '&TYPENAMES=NTNU:track_km_wfs&outputFormat=application/json')
+        .then(r => r.json()),
+])
+.then(([missionsData, kmData]) => {
+    const props = (missionsData.features || []).map(f => f.properties);
+    const vehicles = [...new Set(props.map(p => p.vehicle))].filter(Boolean);
+    const years    = [...new Set(props.map(p => p.year))].filter(Boolean).sort();
+
+    setKpi('kpi-missions',  props.length);
+    setKpi('kpi-vehicles',  vehicles.length);
+    setKpi('kpi-years',     years.length);
+
+    // Total sailed distance from track_km_wfs
+    const kmFeatures = (kmData.features || []).map(f => f.properties);
+    const totalKm = kmFeatures.reduce((s, p) => s + (p.km || 0), 0);
+    setKpi('kpi-distance', Math.round(totalKm).toLocaleString() + ' km');
+
+    // Sailed distance per year
+    const kmByYear = {};
+    kmFeatures.forEach(p => {
+        if (p.year) kmByYear[p.year] = (kmByYear[p.year] || 0) + (p.km || 0);
+    });
+    const sortedYears = Object.keys(kmByYear).sort();
+    new Chart(document.getElementById('chart-year'), {
+        type: 'bar',
+        data: {
+            labels: sortedYears,
+            datasets: [{
+                label: 'km',
+                data:  sortedYears.map(y => +(kmByYear[y] || 0).toFixed(1)),
+                backgroundColor: '#2277cc99',
+                borderColor:     '#2277cc',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { ticks: { callback: v => v + ' km' }, grid: { color: '#f0f0f0' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+})
+.catch(err => {
+    ['kpi-missions','kpi-distance','kpi-vehicles','kpi-years'].forEach(id => {
+        setKpi(id, '—');
+        document.getElementById(id).querySelector('.value').style.color = '#ccc';
+    });
+    console.error('WFS error:', err);
+});
+
+// ── Dive time per vehicle ─────────────────────────────────────────────────
+fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+      '&TYPENAMES=NTNU:dive_time_wfs&outputFormat=application/json')
+.then(r => r.json())
+.then(data => {
+    const rows = (data.features || []).map(f => f.properties)
+        .sort((a, b) => a.vehicle.localeCompare(b.vehicle));
+    const labels = rows.map(r => r.vehicle);
+    const hours  = rows.map(r => r.dive_hours);
+
+    new Chart(document.getElementById('chart-vehicle'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Dive hours',
+                data:  hours,
+                backgroundColor: labels.map(v => vehicleColor(v) + '99'),
+                borderColor:     labels.map(v => vehicleColor(v)),
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    ticks: { callback: v => v + ' h' },
+                    grid: { color: '#f0f0f0' },
+                    title: { display: true, text: 'Hours (depth > 1 m)' }
+                },
+                x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+})
+.catch(err => console.error('Dive time WFS error:', err));
+
+// ── Sensor × year table ─────────────────────────────────────────────────
+const YEARS = [2017,2018,2019,2021,2022,2023,2024,2025];
+
+// Sensor availability per vehicle — hardcoded from imc_meldingar.xlsx
+// Merk: lauv-harald bruker norsk stavemåte i databasen
+const SENSOR_VEHICLES = {
+    'CTD':                       ['lauv-fridtjof','lauv-harald','lauv-roald','lauv-thor','lauv-marie'],
+    'Klorofyll-a':               ['lauv-harald','lauv-roald','lauv-thor'],
+    'Turbidity':                 ['lauv-roald','lauv-thor'],
+    'Oxygen':                    ['lauv-roald'],
+    'CDOM':                      ['lauv-harald'],
+    'Optical backscatter':       ['lauv-harald'],
+    'Sonar':                     ['lauv-fridtjof','lauv-thor','lauv-marie'],
+    'Camera':                    ['lauv-fridtjof'],
+};
+
+fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+      '&TYPENAMES=NTNU:track_km_wfs&outputFormat=application/json')
+.then(r => r.json())
+.then(data => {
+    // km[vehicle][year] = km — key is the WFS value (lauv-harald Norwegian spelling)
+    const km = {};
+    const vehicleAlias = {};  // alias → WFS name (handles harold/Harald spelling)
+    (data.features || []).forEach(f => {
+        const p = f.properties;
+        if (!km[p.vehicle]) km[p.vehicle] = {};
+        km[p.vehicle][p.year] = p.km;
+        // Registrer alias: lauv-harald → lauv-harald (norsk)
+        vehicleAlias[p.vehicle.toLowerCase()] = p.vehicle;
+    });
+    // Normalise SENSOR_VEHICLES keys to match WFS vehicle names
+    const sensorVehiclesNorm = {};
+    Object.entries(SENSOR_VEHICLES).forEach(([s, vs]) => {
+        sensorVehiclesNorm[s] = vs.map(v => vehicleAlias[v.toLowerCase()] || v);
+    });
+
+    const rows = Object.entries(sensorVehiclesNorm).map(([sensor, vehicles]) => {
+        const cells = YEARS.map(yr => {
+            const total = vehicles.reduce((sum, v) =>
+                sum + (km[v] && km[v][yr] ? km[v][yr] : 0), 0);
+            const hasData = vehicles.some(v => km[v] && km[v][yr]);
+            return hasData ? total : null;
+        });
+        const rowTotal = cells.reduce((s, v) => s + (v !== null ? v : 0), 0);
+        return { sensor, cells, rowTotal };
+    });
+
+    // Kolonnesum per år (kun rader der sensoren fantes det året)
+    const colTotals = YEARS.map((_, i) =>
+        rows.reduce((s, r) => s + (r.cells[i] !== null ? r.cells[i] : 0), 0)
+    );
+    const grandTotal = colTotals.reduce((s, v) => s + v, 0);
+
+    const fmt1 = v => v === 0 ? '—' : v.toFixed(1);
+
+    const thead = '<thead><tr>'
+        + '<th class="row-header">Sensor</th>'
+        + YEARS.map(y => `<th>${y}</th>`).join('')
+        + '<th class="total-col">Total</th>'
+        + '</tr></thead>';
+
+    const tbody = '<tbody>'
+        + rows.map(({sensor, cells, rowTotal}) =>
+            '<tr><td class="row-label">' + sensor + '</td>'
+            + cells.map(v => v === null
+                ? '<td class="none">❌</td>'
+                : `<td class="km">${v.toFixed(1)}</td>`
+            ).join('')
+            + `<td class="km total-col">${fmt1(rowTotal)}</td>`
+            + '</tr>'
+        ).join('')
+        + '<tr class="total-row">'
+        + '<td class="row-label">Total</td>'
+        + colTotals.map(v => `<td class="km">${fmt1(v)}</td>`).join('')
+        + `<td class="km total-col">${fmt1(grandTotal)}</td>`
+        + '</tr>'
+        + '</tbody>';
+
+    document.getElementById('sensor-table-wrap').innerHTML =
+        '<table class="sensor-table">' + thead + tbody + '</table>';
+})
+.catch(err => {
+    document.getElementById('sensor-table-wrap').textContent = 'Could not load km data.';
+    console.error('sensor-km WFS feil:', err);
+});
+
+// ── Systemstatus ──────────────────────────────────────────────────────────
+function setStatus(dotId, msgId, up, msg) {
+    document.getElementById(dotId).className = 'status-dot ' + (up ? 'up' : 'down');
+    document.getElementById(msgId).textContent = msg;
+}
+
+// GeoServer
+fetch(GS + '/web/', { method: 'HEAD' })
+    .then(r => setStatus('dot-gs', 'msg-gs', r.ok, r.ok ? 'Responding (HTTP ' + r.status + ')' : 'HTTP ' + r.status))
+    .catch(() => setStatus('dot-gs', 'msg-gs', false, 'No response'));
+
+// PostGIS — verifiser via WFS capabilities
+fetch(GS + '/NTNU/wfs?SERVICE=WFS&REQUEST=GetCapabilities')
+    .then(r => setStatus('dot-pg', 'msg-pg', r.ok, r.ok ? 'WFS available' : 'WFS failed'))
+    .catch(() => setStatus('dot-pg', 'msg-pg', false, 'No response'));
+
+// GeoWebCache
+fetch(GS + '/gwc/rest/layers.json', { headers: { Authorization: AUTH } })
+    .then(r => r.json().then(d => {
+        const n = Array.isArray(d) ? d.length : '?';
+        setStatus('dot-gwc', 'msg-gwc', r.ok, r.ok ? n + ' layers registered' : 'Error');
+    }))
+    .catch(() => setStatus('dot-gwc', 'msg-gwc', false, 'No response'));
+</script>
+</body>
+</html>

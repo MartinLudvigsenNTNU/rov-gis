@@ -55,6 +55,11 @@ Posisjon er rekna ut frå `EstimatedState`-meldingar med NED-offset konvertert t
 - [ ] Støtte for ROV-loggformat
 - [ ] Tidsserie-kontroll i kartet
 - [ ] Flytte til NTNU OpenStack
+- [ ] TopoSvalbard (NPI) som bakgrunnskart — NPI tilbyr WMTS i EPSG:25833 (native UTM-33N, ingen reprosjeksjon). Krev proj4leaflet for at Leaflet skal handtere ikkje-Mercator CRS, og eige EPSG:25833 gridset i GeoWebCache for at AUV-WMS-lag skal cachast riktig. GWC-seeding via REST-API fungerer ikkje for custom gridsets i GeoServer 2.24 — tiles må seedast via ekstern HTTP eller oppgraderast til GeoServer 2.25+.
+- [ ] lauv-fridtjof kamerabilete — kameraet lagrar JPEG-filer direkte til disk utanfor LSF-straumen (ingen `CompressedImage`/IMC-melding i loggen). Ingestion-pipeline må utvidast til å indeksera bildefiler frå tokt-mappene, kopla dei til GPS-posisjon via tidsstempel mot `EstimatedState`, og lagra bildeposisjon i PostGIS for visning i kartet.
+- [ ] lauv-marie sonardata — LSF-loggane inneheld ukjende IMC-ID-ar 2023 og 2024 (truleg `SatellitesInView`/`GnssHwMon` frå ein nyare IMC-versjon), pluss `DevDataBinary` med binær sonardata. For å visualisera sidescan/multibeam krevst dekoding av den binære straumen (proprietært format eller `SonarData`-pakker) og konvertering til GeoTIFF eller WCS-lag i GeoServer.
+- [ ] Fullstendig sensor-ingestion — les og lagra følgjande sensorar per punkt i `auv_tracks`: Klorofyll-a (IMC 289, harold/thor/roald), Turbiditet (IMC 288, thor/roald), Oksygen (IMC 295, roald), CDOM (IMC 903, harold), Optisk tilbakespredning (IMC 904, harold), `sonar_active` boolean (IMC 276 for thor/fridtjof, IMC 2023 for marie), `camera_active` boolean (IMC 277 for fridtjof). Merk: ikkje alle farkoster bereknar salthaldighet sjølv om dei loggar konduktivitet (lauv-thor manglar Salinity-melding).
+- [ ] Sensor × år dashboard-tabell — statisk tabell med sensorar som rader og år som kolonnar. Verdiar: akkumulerte km per sensor per år på tvers av farkoster (PostGIS `track_km_wfs` WFS-lag med `vessel_transit=false`). Sensor-til-farkost-mapping basert på `imc_meldingar.xlsx`-analysen.
 
 ## Teknologi
 
