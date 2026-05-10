@@ -60,6 +60,7 @@ Posisjon er rekna ut frå `EstimatedState`-meldingar med NED-offset konvertert t
 - [ ] lauv-marie sonardata — LSF-loggane inneheld ukjende IMC-ID-ar 2023 og 2024 (truleg `SatellitesInView`/`GnssHwMon` frå ein nyare IMC-versjon), pluss `DevDataBinary` med binær sonardata. For å visualisera sidescan/multibeam krevst dekoding av den binære straumen (proprietært format eller `SonarData`-pakker) og konvertering til GeoTIFF eller WCS-lag i GeoServer.
 - [ ] Fullstendig sensor-ingestion — les og lagra følgjande sensorar per punkt i `auv_tracks`: Klorofyll-a (IMC 289, harold/thor/roald), Turbiditet (IMC 288, thor/roald), Oksygen (IMC 295, roald), CDOM (IMC 903, harold), Optisk tilbakespredning (IMC 904, harold), `sonar_active` boolean (IMC 276 for thor/fridtjof, IMC 2023 for marie), `camera_active` boolean (IMC 277 for fridtjof). Merk: ikkje alle farkoster bereknar salthaldighet sjølv om dei loggar konduktivitet (lauv-thor manglar Salinity-melding).
 - [ ] Sensor × år dashboard-tabell — statisk tabell med sensorar som rader og år som kolonnar. Verdiar: akkumulerte km per sensor per år på tvers av farkoster (PostGIS `track_km_wfs` WFS-lag med `vessel_transit=false`). Sensor-til-farkost-mapping basert på `imc_meldingar.xlsx`-analysen.
+- [ ] Grafisk fil-opplasting i dashboard — Enkel "Last inn nye loggfiler"-boks i `dashboard.html`. Bruker vel LSF/LSF.GZ-filer, år, farkost og kampanje. Krev FastAPI-backend for å ta imot filer og køyre ingestion. Alternativt: knapp som triggar ingestion på filer som allereie ligg i `Data/`-mappa på serveren.
 
 ## Teknologi
 

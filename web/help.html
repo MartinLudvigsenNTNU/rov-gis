@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Help — AUV ops AT-334</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8f9fc;
+            color: #222;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        header {
+            background: #1a1a2e;
+            color: white;
+            padding: 14px 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+        header a { margin-left: auto; color: #aac4ff; text-decoration: none; font-size: 13px; }
+        header a:hover { text-decoration: underline; }
+
+        .layout {
+            display: flex;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 20px;
+            gap: 32px;
+        }
+
+        /* Sidebar TOC */
+        .toc {
+            width: 200px;
+            flex-shrink: 0;
+        }
+        .toc-inner {
+            position: sticky;
+            top: 24px;
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        }
+        .toc h3 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase;
+                   letter-spacing: .06em; color: #888; }
+        .toc a {
+            display: block;
+            font-size: 12px;
+            color: #555;
+            text-decoration: none;
+            padding: 3px 0;
+            border-left: 2px solid transparent;
+            padding-left: 8px;
+        }
+        .toc a:hover { color: #1a4fa0; border-left-color: #1a4fa0; }
+
+        /* Main content */
+        .content { flex: 1; min-width: 0; }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px 28px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin: 0 0 14px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a2e;
+            border-bottom: 2px solid #e8ecf4;
+            padding-bottom: 8px;
+        }
+        h3 { font-size: 13px; font-weight: 700; color: #333; margin: 18px 0 6px; }
+        p  { margin: 0 0 10px; }
+        ul, ol { margin: 0 0 10px; padding-left: 20px; }
+        li { margin-bottom: 4px; }
+
+        /* Definition table */
+        table.def {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        table.def th {
+            background: #1F3864;
+            color: white;
+            padding: 7px 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        table.def td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #eef0f4;
+            vertical-align: top;
+        }
+        table.def tr:last-child td { border-bottom: none; }
+        table.def tr:nth-child(even) td { background: #f8f9fc; }
+        code {
+            background: #eef0f8;
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        /* Status badges */
+        .badge {
+            display: inline-block;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .badge-success  { background: #d6f0d6; color: #1a6b1a; }
+        .badge-surface  { background: #dbeafe; color: #1e4fa0; }
+        .badge-depth    { background: #fef9c3; color: #7a5c00; }
+        .badge-tech     { background: #ffe4b5; color: #8b3a00; }
+        .badge-aborted  { background: #f5e0e0; color: #8b1a1a; }
+
+        /* Architecture box */
+        .arch {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .arch-box {
+            background: #f0f4fb;
+            border: 1px solid #c8d8f0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 12px;
+            min-width: 130px;
+            text-align: center;
+        }
+        .arch-box strong { display: block; font-size: 13px; color: #1a4fa0; }
+
+        .caveat {
+            background: #fff8e1;
+            border-left: 4px solid #f9a825;
+            padding: 8px 14px;
+            border-radius: 0 4px 4px 0;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>AUV ops AT-334 — Help</h1>
+    <a href="index.html">← Back to map</a>
+</header>
+
+<div class="layout">
+
+    <nav class="toc">
+        <div class="toc-inner">
+            <h3>Contents</h3>
+            <a href="#purpose">Purpose</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#map">Map workflow</a>
+            <a href="#dashboard">Dashboard workflow</a>
+            <a href="#metrics">Metric definitions</a>
+            <a href="#mission-status">Mission status</a>
+            <a href="#spatial-search">Spatial search</a>
+            <a href="#export">Export</a>
+            <a href="#caveats">Known caveats</a>
+            <a href="#queries">Useful queries</a>
+        </div>
+    </nav>
+
+    <main class="content">
+
+        <!-- PURPOSE -->
+        <div class="card" id="purpose">
+            <h2>What this system does</h2>
+            <p>This dashboard visualises AUV (Autonomous Underwater Vehicle) operational data collected by NTNU's LAUV fleet at Svalbard between 2017 and 2025. It lets you browse tracks on a map, filter by vehicle, year and area, download track data as CSV, and inspect fleet-wide statistics.</p>
+            <p>The five vehicles in the dataset are <strong>Fridtjof</strong>, <strong>Harald</strong>, <strong>Roald</strong>, <strong>Thor</strong> and <strong>Marie</strong>. Each carries a different sensor payload (see the <em>Farkoster</em> tab in the dashboard).</p>
+            <p>Data comes from raw DUNE/IMC log files (<code>.lsf</code> / <code>.lsf.gz</code>) ingested automatically into PostGIS. <strong>No real-time connection</strong> — all data is historical.</p>
+        </div>
+
+        <!-- ARCHITECTURE -->
+        <div class="card" id="architecture">
+            <h2>Architecture overview</h2>
+            <div class="arch">
+                <div class="arch-box"><strong>LSF log files</strong>DUNE/IMC binary</div>
+                <div class="arch-box"><strong>ingest.py</strong>Python + imcpy</div>
+                <div class="arch-box"><strong>PostGIS</strong>Spatial database</div>
+                <div class="arch-box"><strong>GeoServer</strong>WMS / WFS API</div>
+                <div class="arch-box"><strong>Leaflet</strong>Map frontend</div>
+            </div>
+            <p>Raw logs are parsed by <code>ingestion/ingest.py</code>, which extracts GPS positions (<code>EstimatedState</code>), CTD values and vehicle metadata from each file. Each position becomes a row in the <code>auv_tracks</code> table with latitude, longitude, depth, speed, temperature, salinity, and conductivity.</p>
+            <p>GeoServer serves pre-computed views and materialized views as WFS. The Leaflet map and dashboard consume these directly — no backend API layer.</p>
+            <table class="def">
+                <tr><th>Component</th><th>Role</th></tr>
+                <tr><td><code>auv_tracks</code></td><td>Main table — one row per GPS point (~10 M rows)</td></tr>
+                <tr><td>Vehicle views (<code>auv_fridtjof</code> etc.)</td><td>Per-vehicle point layers for the map (filtered: no transit, no aborted)</td></tr>
+                <tr><td><code>auv_missions</code></td><td>One row per mission — bounding box + metadata (mat. view)</td></tr>
+                <tr><td><code>track_km_by_vehicle_year</code></td><td>Accumulated km at depth &gt; 1 m, per vehicle × year (mat. view)</td></tr>
+                <tr><td><code>dive_time_mat</code></td><td>Hours at depth &gt; 1 m per vehicle (mat. view)</td></tr>
+                <tr><td><code>mission_status_mat</code></td><td>Mission outcome counts per vehicle (mat. view)</td></tr>
+            </table>
+        </div>
+
+        <!-- MAP WORKFLOW -->
+        <div class="card" id="map">
+            <h2>Map workflow</h2>
+            <h3>Layer panel (left side)</h3>
+            <p>Tracks are grouped by vehicle and year. Toggle individual years or click the vehicle header to show/hide all years for that vehicle. The map loads tracks on demand — zooming in triggers higher-resolution tile requests.</p>
+            <h3>Background maps</h3>
+            <p>Two options: <strong>OpenStreetMap</strong> (default) and <strong>TopoSvalbard</strong> (NPI topographic map, better for fjord navigation context). TopoSvalbard uses EPSG:25833 (UTM 33N) natively.</p>
+            <h3>Clicking a track</h3>
+            <p>Click any coloured point to see vehicle, campaign, depth, temperature, salinity and speed at that position.</p>
+            <h3>Mission clusters</h3>
+            <p>At low zoom levels, missions are shown as numbered clusters. Clicking a cluster zooms to that area and breaks it into individual missions. Clicking a mission marker shows its bounding box and metadata.</p>
+        </div>
+
+        <!-- DASHBOARD WORKFLOW -->
+        <div class="card" id="dashboard">
+            <h2>Dashboard workflow</h2>
+            <h3>Oversikt tab</h3>
+            <p>Shows fleet-wide totals (missions, sailed distance, vehicles, years), two bar charts (distance per year; dive time per vehicle), and two matrix tables (sensor × year km; vehicle × year km).</p>
+            <h3>Farkoster tab</h3>
+            <p>One sub-tab per vehicle. Each shows the sensor payload, four key statistics, and a mission outcome breakdown. Data is fetched live from GeoServer WFS.</p>
+            <h3>Spatial search (top-right of map)</h3>
+            <p>Draw a rectangle on the map, optionally set a date range, and click Search. The panel lists all missions whose tracks intersect the rectangle. You can export results as CSV.</p>
+        </div>
+
+        <!-- METRIC DEFINITIONS -->
+        <div class="card" id="metrics">
+            <h2>Metric definitions</h2>
+            <table class="def">
+                <tr><th>Metric</th><th>Definition</th></tr>
+                <tr>
+                    <td><strong>Sailed distance (green / km)</strong></td>
+                    <td>Sum of step-by-step GPS distances where <strong>depth &gt; 1 m</strong> and time between consecutive points ≤ 30 s. GPS jumps (&gt; 50 m/s) are excluded. This is the actual underwater distance.</td>
+                </tr>
+                <tr>
+                    <td><strong>Sailed distance (red / km)</strong></td>
+                    <td>Same calculation but <strong>without the depth filter</strong> — includes surface transits. Always ≥ green value.</td>
+                </tr>
+                <tr>
+                    <td><strong>Dive time (hours)</strong></td>
+                    <td>Cumulative time when depth &gt; 1 m. Computed as the sum of intervals between consecutive points (capped at 10 s per step to avoid inflating gaps). Aborted missions excluded.</td>
+                </tr>
+                <tr>
+                    <td><strong>Total time (hours)</strong></td>
+                    <td>Wall-clock duration from first to last GPS point per mission, summed across all non-aborted missions. 24-hour gaps within a single named log are split into separate segments.</td>
+                </tr>
+                <tr>
+                    <td><strong>Missions (green)</strong></td>
+                    <td>Count of missions where at least one point has depth &gt; 1 m <em>and</em> duration &gt; 3 min.</td>
+                </tr>
+                <tr>
+                    <td><strong>Missions (red)</strong></td>
+                    <td>All missions including aborted (&lt; 3 min) and surface-only ones.</td>
+                </tr>
+                <tr>
+                    <td><strong>Aborted mission</strong></td>
+                    <td>Any mission with duration &lt; 3 minutes. These are hidden from the map and excluded from all statistics.</td>
+                </tr>
+                <tr>
+                    <td><strong>vessel_transit</strong></td>
+                    <td>Points where the computed speed exceeds 2.5 m/s. These are logged while the support vessel carries the AUV and are excluded from all track layers and distance calculations.</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- MISSION STATUS -->
+        <div class="card" id="mission-status">
+            <h2>Mission status categories</h2>
+            <p>Every mission (for Fridtjof, Harald, Roald, Thor, Marie) is classified by reading its LSF log file. The classification uses <code>VehicleState</code>, <code>PlanControlState</code> and <code>EstimatedState</code> IMC messages.</p>
+            <table class="def">
+                <tr><th>Status</th><th>Meaning</th><th>How detected</th></tr>
+                <tr>
+                    <td><span class="badge badge-success">✅ success</span></td>
+                    <td>Mission completed as planned, or all deep manoeuvres were executed before the AUV surfaced.</td>
+                    <td><code>plan_progress = 100%</code> in <code>PlanControlState</code>, OR max depth before <code>PlanControl STOP</code> &gt; 1 m.</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-surface">🌊 user_surface</span></td>
+                    <td>Operator aborted the mission at the surface before any deep diving occurred.</td>
+                    <td>AUV ended at depth &lt; 0.5 m AND max depth before abort ≤ 1 m.</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-depth">⚠️ user_depth_late</span></td>
+                    <td>Operator aborted while the AUV was underwater, after covering &gt; 30% of the typical mission distance (≥ 0.55 km).</td>
+                    <td>Average end depth ≥ 1 m AND GPS distance ≥ 0.55 km.</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-depth">⚠️ user_depth_early</span></td>
+                    <td>Operator aborted while the AUV was underwater, before covering 30% of the typical distance (&lt; 0.55 km).</td>
+                    <td>Average end depth ≥ 1 m AND GPS distance &lt; 0.55 km.</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-tech">❌ technical</span></td>
+                    <td>Mission ended due to a fault: altitude error, depth limit, navigation failure, path control error, or hardware fault (e.g. leak sensor).</td>
+                    <td><code>VehicleState.op_mode = ERROR</code> with a non-empty <code>last_error</code> string (excluding <em>"got abort request"</em>).</td>
+                </tr>
+            </table>
+            <div class="caveat">
+                <strong>Note:</strong> Classification is only available for Fridtjof, Harald, Roald, Thor and Marie (all IMC5 or IMC6 files processed). Marie's IMC6 files are classified using depth data only (no <code>VehicleState</code> available in IMC6 parser).
+            </div>
+        </div>
+
+        <!-- SPATIAL SEARCH -->
+        <div class="card" id="spatial-search">
+            <h2>How spatial search works</h2>
+            <ol>
+                <li>Click the <strong>Search</strong> button in the top-right panel of the map.</li>
+                <li>Draw a rectangle by clicking two corners on the map.</li>
+                <li>Optionally set a start and end date.</li>
+                <li>Click <strong>Søk</strong>. The system queries GeoServer WFS (<code>auv_missions</code> layer) with a bounding-box and time filter.</li>
+                <li>Results list all missions whose <em>bounding box</em> intersects your rectangle. Note: this is a bounding box intersection, not an exact track intersection — missions with wide bounding boxes may appear even if the actual track barely enters your rectangle.</li>
+            </ol>
+            <p>The result table shows mission name, vehicle, year, and campaign. Click a row to zoom to that mission on the map.</p>
+        </div>
+
+        <!-- EXPORT -->
+        <div class="card" id="export">
+            <h2>Export workflow</h2>
+            <p>After running a spatial search, click <strong>Last ned CSV</strong> to download the result list as a comma-separated file. Each row contains mission name, vehicle, year, campaign, start time, and end time.</p>
+            <p>To export raw GPS tracks for a specific mission, use the GeoServer WFS endpoint directly:</p>
+            <code>GET /geoserver/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:auv_fridtjof&CQL_FILTER=name='&lt;mission_name&gt;'&outputFormat=application/json</code>
+            <p style="margin-top:8px">Replace <code>auv_fridtjof</code> with the relevant vehicle layer name.</p>
+        </div>
+
+        <!-- CAVEATS -->
+        <div class="card" id="caveats">
+            <h2>Known caveats and limitations</h2>
+            <div class="caveat"><strong>GPS jumps:</strong> Some missions contain single-point GPS errors that place the AUV hundreds of km away for one timestep. These are filtered from distance calculations (steps &gt; 50 m/s excluded) but the erroneous point may still be visible on the map.</div>
+            <div class="caveat"><strong>24-hour gaps:</strong> Two Fridtjof missions (133914, 172120) span two calendar days with a 24-hour gap. They are split into separate segments in the Excel export and the gap is excluded from duration calculations.</div>
+            <div class="caveat"><strong>Mission status — Marie:</strong> lauv-marie logs use IMC v5.5 (0xFE55 sync). <code>VehicleState</code> is not parsed from IMC6 by the current pipeline, so classification uses depth data only.</div>
+            <div class="caveat"><strong>Depth filter for distance:</strong> "Sailed distance (depth &gt; 1 m)" counts only steps where the <em>current</em> point has depth &gt; 1 m and the time to the next point is ≤ 30 s. Yo-yo dives with long step intervals may be under-counted.</div>
+            <div class="caveat"><strong>Sensor data:</strong> Not all sensors are recorded in every mission. Missing values appear as NULL in the database. The sensor availability table in the dashboard is hardcoded from the IMC message analysis (imc_meldingar.xlsx) and may not reflect per-mission sensor failures.</div>
+            <div class="caveat"><strong>vessel_transit heuristic:</strong> Points with speed &gt; 2.5 m/s are assumed to be vessel transit. LAUV maximum speed is ~2 m/s, so this threshold should be safe, but occasionally a fast dive or current may be misclassified.</div>
+        </div>
+
+        <!-- USEFUL QUERIES -->
+        <div class="card" id="queries">
+            <h2>Examples of useful queries</h2>
+            <h3>All missions in Isfjorden, 2022</h3>
+            <p>In the map: draw a rectangle over Isfjorden, set year filter to 2022, click Søk.</p>
+
+            <h3>Which Fridtjof missions had technical failures?</h3>
+            <p>Open the Farkoster tab → Fridtjof → Mission status: ❌ Technical shows 43 missions. The Excel file (<code>alle_missions.xlsx</code>) has a "Mission-status" column with the error reason in the Merknad column.</p>
+
+            <h3>Direct PostGIS query — missions deeper than 80 m</h3>
+            <code>SELECT DISTINCT name, vehicle, MAX(depth) FROM auv_tracks WHERE depth &gt; 80 GROUP BY name, vehicle ORDER BY MAX(depth) DESC;</code>
+
+            <h3>Total km per campaign</h3>
+            <code>SELECT campaign, vehicle, round(SUM(ST_Distance(geom::geography, lag_geom::geography))/1000, 1) AS km FROM (...) GROUP BY campaign, vehicle;</code>
+            <p>Use the <code>auv_tracks</code> table with a LAG window function. The <code>track_km_by_vehicle_year</code> materialized view already does this per vehicle × year.</p>
+
+            <h3>Which year had the most dive time?</h3>
+            <p>Dashboard → Oversikt → Sailed distance per year chart. Hover each bar for the value.</p>
+
+            <h3>Download all tracks for a specific campaign</h3>
+            <code>GET /geoserver/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:auv_fridtjof&CQL_FILTER=campaign='sss_bjorn'&outputFormat=application/json</code>
+        </div>
+
+    </main>
+</div>
+</body>
+</html>

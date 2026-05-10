@@ -6,151 +6,172 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; }
-        body {
+
+        html, body {
+            height: 100%;
             margin: 0;
+            overflow: hidden;
             font-family: sans-serif;
             background: #f4f6f9;
             color: #222;
-            font-size: 14px;
+            font-size: 13px;
         }
+
+        /* ── Header ── */
         header {
             background: #1a1a2e;
             color: white;
-            padding: 14px 24px;
+            padding: 10px 20px;
             display: flex;
             align-items: center;
             gap: 16px;
+            flex-shrink: 0;
         }
-        header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+        header h1 { margin: 0; font-size: 16px; font-weight: 600; }
         header a {
             margin-left: auto;
             color: #aac4ff;
             text-decoration: none;
-            font-size: 13px;
+            font-size: 12px;
         }
         header a:hover { text-decoration: underline; }
 
-        .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+        /* ── Full-height shell ── */
+        .shell {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px); /* 40px = header height */
+            padding: 10px 16px;
+            gap: 10px;
+        }
 
-        /* ── Nøkkeltall ── */
+        /* ── KPI strip ── */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 28px;
+            gap: 10px;
+            flex-shrink: 0;
         }
         .kpi {
             background: white;
-            border-radius: 8px;
-            padding: 20px 18px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            border-radius: 7px;
+            padding: 10px 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
             text-align: center;
         }
         .kpi .value {
-            font-size: 32px;
+            font-size: 26px;
             font-weight: 700;
             color: #1a4fa0;
             line-height: 1.1;
         }
         .kpi .label {
-            font-size: 12px;
+            font-size: 10px;
             color: #777;
-            margin-top: 4px;
+            margin-top: 2px;
             text-transform: uppercase;
             letter-spacing: .05em;
         }
         .kpi.loading .value { color: #ccc; }
 
-        /* ── Diagrammer ── */
-        .charts-grid {
+        /* ── Main two-column area ── */
+        .main-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 28px;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* ── Left column: two charts stacked ── */
+        .charts-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
         }
         .chart-card {
             background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            border-radius: 7px;
+            padding: 12px 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
         }
         .chart-card h2 {
-            margin: 0 0 16px;
-            font-size: 14px;
+            margin: 0 0 8px;
+            font-size: 12px;
             font-weight: 600;
             color: #444;
+            flex-shrink: 0;
         }
-        .chart-wrap { position: relative; height: 240px; }
+        .chart-wrap {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+        }
 
-        /* ── Systemstatus ── */
-        .status-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        /* ── Right column: sensor table + status ── */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
         }
-        .status-card h2 {
-            margin: 0 0 14px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #444;
-        }
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(3, auto);
-            gap: 8px 24px;
-            align-items: center;
-        }
-        .status-dot {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            background: #ccc;
-            display: inline-block;
-        }
-        .status-dot.up   { background: #22c55e; }
-        .status-dot.down { background: #ef4444; }
-        .status-name { font-weight: 500; }
-        .status-msg  { font-size: 12px; color: #888; }
-
-        /* ── Sensor table ── */
         .sensor-card {
             background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08);
-            margin-bottom: 28px;
-            overflow-x: auto;
+            border-radius: 7px;
+            padding: 12px 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         .sensor-card h2 {
-            margin: 0 0 4px;
-            font-size: 14px;
+            margin: 0 0 2px;
+            font-size: 12px;
             font-weight: 600;
             color: #444;
+            flex-shrink: 0;
         }
         .sensor-card .subtitle {
-            font-size: 11px;
+            font-size: 10px;
             color: #999;
-            margin: 0 0 14px;
+            margin: 0 0 8px;
+            flex-shrink: 0;
+        }
+        #sensor-table-wrap,
+        #vehicle-table-wrap {
+            overflow: auto;
+            flex: 1;
+            min-height: 0;
         }
         .sensor-table {
             border-collapse: collapse;
             width: 100%;
-            font-size: 12px;
+            font-size: 11px;
         }
         .sensor-table th {
             background: #1F3864;
             color: white;
-            padding: 7px 10px;
+            padding: 5px 8px;
             text-align: center;
             font-weight: 600;
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
         .sensor-table th.row-header {
             text-align: left;
-            min-width: 170px;
+            min-width: 140px;
         }
         .sensor-table td {
-            padding: 6px 10px;
+            padding: 5px 8px;
             text-align: center;
             border-bottom: 1px solid #eef0f4;
             white-space: nowrap;
@@ -167,7 +188,7 @@
             color: #1a4fa0;
             font-variant-numeric: tabular-nums;
         }
-        .sensor-table td.none { color: #ccc; font-size: 14px; }
+        .sensor-table td.none { color: #ddd; }
         .sensor-table .total-col {
             background: #eef3fa;
             font-weight: 600;
@@ -182,33 +203,222 @@
             font-weight: 600;
             border-top: 2px solid #c0cfe8;
         }
-        .sensor-table tr.total-row td.row-label {
-            background: #dce5f5;
+        .sensor-table tr.total-row td.row-label { background: #dce5f5; }
+
+        /* ── System status ── */
+        .status-card {
+            background: white;
+            border-radius: 7px;
+            padding: 10px 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            flex-shrink: 0;
+        }
+        .status-card h2 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #444;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 4px 12px;
+            align-items: center;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+            display: inline-block;
+        }
+        .status-dot.up   { background: #22c55e; }
+        .status-dot.down { background: #ef4444; }
+        .status-name { font-weight: 500; font-size: 12px; }
+        .status-msg  { font-size: 11px; color: #888; text-align: right; }
+
+        /* ── Tabs ── */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .tab-btn {
+            background: #eef0f4;
+            border: none;
+            border-radius: 5px 5px 0 0;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+        .tab-btn:hover   { background: #dde2ec; color: #333; }
+        .tab-btn.active  { background: #1F3864; color: white; }
+
+        .tab-panel { display: none; flex-direction: column; flex: 1; min-height: 0; }
+        .tab-panel.active { display: flex; }
+
+        /* ── Top-level view nav ── */
+        .top-nav {
+            background: #16213e;
+            display: flex;
+            gap: 2px;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+        .top-tab {
+            background: none;
+            border: none;
+            color: #8899bb;
+            padding: 7px 18px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color .15s, border-color .15s;
+        }
+        .top-tab:hover  { color: #ccd8f0; }
+        .top-tab.active { color: white; border-bottom-color: #4d90fe; }
+
+        .view { display: none; flex-direction: column; flex: 1; min-height: 0; }
+        .view.active { display: flex; }
+
+        /* ── Farkoster-view ── */
+        .farkoster-shell {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            padding: 10px 16px;
+            gap: 10px;
+        }
+        .vehicle-tab-bar {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .vehicle-tab-btn {
+            background: #eef0f4;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            padding: 6px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .vehicle-tab-btn:hover  { background: #dde2ec; }
+        .vehicle-tab-btn.active { background: white; color: #1a1a2e;
+                                   box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+        .vehicle-dot {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
         }
 
-        @media (max-width: 680px) {
-            .kpi-grid    { grid-template-columns: repeat(2, 1fr); }
-            .charts-grid { grid-template-columns: 1fr; }
+        .vehicle-panel { display: none; flex: 1; min-height: 0; gap: 10px; }
+        .vehicle-panel.active { display: grid;
+            grid-template-columns: 220px 1fr;
+            grid-template-rows: 1fr auto; }
+
+        /* ── Instrument list ── */
+        .instr-card {
+            background: white; border-radius: 7px;
+            padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            grid-row: 1 / 3;
+            display: flex; flex-direction: column;
         }
+        .instr-card h3 { margin: 0 0 10px; font-size: 12px; font-weight: 700;
+                          color: #444; text-transform: uppercase; letter-spacing:.05em; }
+        .instr-list { list-style: none; margin: 0; padding: 0; flex: 1; }
+        .instr-list li {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 0; border-bottom: 1px solid #f0f0f0;
+            font-size: 12px; color: #333;
+        }
+        .instr-list li:last-child { border-bottom: none; }
+        .instr-icon { font-size: 14px; width: 18px; text-align: center; }
+
+        /* ── Stats card ── */
+        .stats-card {
+            background: white; border-radius: 7px;
+            padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+        .stats-card h3 { margin: 0 0 10px; font-size: 12px; font-weight: 700;
+                          color: #444; text-transform: uppercase; letter-spacing:.05em; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .stat-item { text-align: center; }
+        .stat-item .sv {
+            font-size: 22px; font-weight: 700; color: #1a4fa0; line-height: 1.1;
+        }
+        .stat-item .sv .sv-sub {
+            font-size: 14px; color: #aaa; font-weight: 400; margin-left: 4px;
+        }
+        .stat-item .sl {
+            font-size: 10px; color: #888; margin-top: 2px;
+            text-transform: uppercase; letter-spacing:.04em;
+        }
+
+        /* ── Mission status card ── */
+        .mission-card {
+            background: white; border-radius: 7px;
+            padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+        .mission-card h3 { margin: 0 0 10px; font-size: 12px; font-weight: 700;
+                            color: #444; text-transform: uppercase; letter-spacing:.05em; }
+        .mission-status-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            text-align: center;
+        }
+        .ms-item .ms-icon { font-size: 18px; }
+        .ms-item .ms-count { font-size: 18px; font-weight: 700; color: #222; }
+        .ms-item .ms-pct   { font-size: 11px; color: #888; }
+        .ms-item .ms-label { font-size: 10px; color: #666; margin-top: 2px; }
     </style>
 </head>
-<body>
+<body style="display:flex;flex-direction:column;height:100%">
 <header>
     <h1>Dashboard — AUV ops AT-334</h1>
-    <a href="index.html">← Back to map</a>
+    <a href="index.html" style="margin-left:auto;color:#aac4ff;text-decoration:none;font-size:12px">← Back to map</a>
+    <a href="help.html" target="_blank" style="margin-left:12px;background:#2a3a6e;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;flex-shrink:0" title="Help">?</a>
 </header>
 
-<div class="container">
+<nav class="top-nav">
+    <button class="top-tab active" data-view="overview">Oversikt</button>
+    <button class="top-tab" data-view="farkoster">Farkoster</button>
+</nav>
 
-    <!-- Key numbers -->
+<!-- ── Oversikt-view (existing content) ── -->
+<div class="view active" id="view-overview">
+<div class="shell">
+
+    <!-- KPI strip -->
     <div class="kpi-grid">
         <div class="kpi loading" id="kpi-missions">
-            <div class="value">—</div>
-            <div class="label">Missions</div>
+            <div class="value">
+                <span id="kpi-missions-green" style="color:#16a34a">—</span>
+                <span style="font-size:18px;color:#ccc;margin:0 4px">/</span>
+                <span id="kpi-missions-red" style="color:#dc2626">—</span>
+            </div>
+            <div class="label">Missions (depth&nbsp;&gt;&nbsp;1m / total)</div>
         </div>
         <div class="kpi loading" id="kpi-distance">
-            <div class="value">—</div>
-            <div class="label">Sailed distance (km)</div>
+            <div class="value">
+                <span id="kpi-distance-green" style="color:#16a34a">—</span>
+                <span style="font-size:18px;color:#ccc;margin:0 4px">/</span>
+                <span id="kpi-distance-red" style="color:#dc2626">—</span>
+            </div>
+            <div class="label">Sailed km (depth&nbsp;&gt;&nbsp;1m / total)</div>
         </div>
         <div class="kpi loading" id="kpi-vehicles">
             <div class="value">—</div>
@@ -220,47 +430,83 @@
         </div>
     </div>
 
-    <!-- Charts -->
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h2>Sailed distance per year (km)</h2>
-            <div class="chart-wrap">
-                <canvas id="chart-year"></canvas>
+    <!-- Main grid: charts left, tables right -->
+    <div class="main-grid">
+
+        <!-- Left: two charts stacked -->
+        <div class="charts-col">
+            <div class="chart-card">
+                <h2>Sailed distance per year — depth &gt; 1 m (km)</h2>
+                <div class="chart-wrap">
+                    <canvas id="chart-year"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h2>Dive time per vehicle — depth &gt; 1 m (hours)</h2>
+                <div class="chart-wrap">
+                    <canvas id="chart-vehicle"></canvas>
+                </div>
             </div>
         </div>
-        <div class="chart-card">
-            <h2>Dive time per vehicle (hours at depth &gt; 1 m)</h2>
-            <div class="chart-wrap">
-                <canvas id="chart-vehicle"></canvas>
+
+        <!-- Right: tabbed tables + status -->
+        <div class="right-col">
+            <div class="sensor-card">
+                <!-- Tab bar -->
+                <div class="tab-bar">
+                    <button class="tab-btn active" data-tab="sensor">Sensor × year</button>
+                    <button class="tab-btn" data-tab="vehicle">Vehicle × year</button>
+                </div>
+
+                <!-- Sensor × year -->
+                <div class="tab-panel active" id="tab-sensor">
+                    <p class="subtitle">Accumulated km — vessel_transit=false, depth&nbsp;&gt;&nbsp;1m, duration&nbsp;&gt;&nbsp;3min</p>
+                    <div id="sensor-table-wrap">Loading…</div>
+                </div>
+
+                <!-- Vehicle × year -->
+                <div class="tab-panel" id="tab-vehicle">
+                    <p class="subtitle">Accumulated km — vessel_transit=false, depth&nbsp;&gt;&nbsp;1m, duration&nbsp;&gt;&nbsp;3min</p>
+                    <div id="vehicle-table-wrap">Loading…</div>
+                </div>
+            </div>
+
+            <!-- System status -->
+            <div class="status-card">
+                <h2>System status</h2>
+                <div class="status-grid" id="status-grid">
+                    <span class="status-dot" id="dot-gs"></span>
+                    <span class="status-name">GeoServer</span>
+                    <span class="status-msg" id="msg-gs">Checking…</span>
+
+                    <span class="status-dot" id="dot-pg"></span>
+                    <span class="status-name">PostGIS</span>
+                    <span class="status-msg" id="msg-pg">Checking…</span>
+
+                    <span class="status-dot" id="dot-gwc"></span>
+                    <span class="status-name">GeoWebCache</span>
+                    <span class="status-msg" id="msg-gwc">Checking…</span>
+                </div>
             </div>
         </div>
+
+    </div>
+</div><!-- end .shell -->
+</div><!-- end #view-overview -->
+
+<!-- ── Farkoster-view ── -->
+<div class="view" id="view-farkoster">
+<div class="farkoster-shell">
+
+    <div class="vehicle-tab-bar" id="vehicle-tab-bar">
+        <!-- injected by JS -->
     </div>
 
-    <!-- Sensor × year table -->
-    <div class="sensor-card">
-        <h2>Sensor × year — accumulated km (vessel_transit=false)</h2>
-        <p class="subtitle">Sensor availability per vehicle hardcoded from IMC message analysis. km computed from GPS tracks in PostGIS.</p>
-        <div id="sensor-table-wrap">Loading…</div>
+    <div id="vehicle-panels">
+        <!-- injected by JS -->
     </div>
 
-    <!-- Systemstatus -->
-    <div class="status-card">
-        <h2>System status</h2>
-        <div class="status-grid" id="status-grid">
-            <span class="status-dot" id="dot-gs"></span>
-            <span class="status-name">GeoServer</span>
-            <span class="status-msg" id="msg-gs">Checking…</span>
-
-            <span class="status-dot" id="dot-pg"></span>
-            <span class="status-name">PostGIS</span>
-            <span class="status-msg" id="msg-pg">Checking…</span>
-
-            <span class="status-dot" id="dot-gwc"></span>
-            <span class="status-name">GeoWebCache</span>
-            <span class="status-msg" id="msg-gwc">Checking…</span>
-        </div>
-    </div>
-
+</div>
 </div>
 
 <script>
@@ -300,20 +546,35 @@ Promise.all([
     fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
           '&TYPENAMES=NTNU:track_km_wfs&outputFormat=application/json')
         .then(r => r.json()),
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+          '&TYPENAMES=NTNU:auv_missions_all&resultType=hits')
+        .then(r => r.text())
+        .then(xml => { const m = xml.match(/numberMatched="(\d+)"/); return m ? parseInt(m[1]) : null; }),
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+          '&TYPENAMES=NTNU:track_km_all_wfs&outputFormat=application/json')
+        .then(r => r.json()),
 ])
-.then(([missionsData, kmData]) => {
+.then(([missionsData, kmData, totalCount, kmAllData]) => {
     const props = (missionsData.features || []).map(f => f.properties);
     const vehicles = [...new Set(props.map(p => p.vehicle))].filter(Boolean);
     const years    = [...new Set(props.map(p => p.year))].filter(Boolean).sort();
 
-    setKpi('kpi-missions',  props.length);
+    const divedCount = props.filter(p => p.max_depth != null && p.max_depth > 1).length;
+    document.getElementById('kpi-missions-green').textContent = divedCount;
+    document.getElementById('kpi-missions-red').textContent   = totalCount ?? '—';
+    document.getElementById('kpi-missions').classList.remove('loading');
+
     setKpi('kpi-vehicles',  vehicles.length);
     setKpi('kpi-years',     years.length);
 
-    // Total sailed distance from track_km_wfs
-    const kmFeatures = (kmData.features || []).map(f => f.properties);
-    const totalKm = kmFeatures.reduce((s, p) => s + (p.km || 0), 0);
-    setKpi('kpi-distance', Math.round(totalKm).toLocaleString() + ' km');
+    // Sailed distance — depth > 1m (green) / all depth (red)
+    const kmFeatures    = (kmData.features    || []).map(f => f.properties);
+    const kmAllFeatures = (kmAllData.features || []).map(f => f.properties);
+    const depthKm = kmFeatures.reduce((s, p)    => s + (p.km || 0), 0);
+    const allKm   = kmAllFeatures.reduce((s, p) => s + (p.km || 0), 0);
+    document.getElementById('kpi-distance-green').textContent = Math.round(depthKm) + ' km';
+    document.getElementById('kpi-distance-red').textContent   = Math.round(allKm)   + ' km';
+    document.getElementById('kpi-distance').classList.remove('loading');
 
     // Sailed distance per year
     const kmByYear = {};
@@ -344,10 +605,14 @@ Promise.all([
     });
 })
 .catch(err => {
-    ['kpi-missions','kpi-distance','kpi-vehicles','kpi-years'].forEach(id => {
+    ['kpi-vehicles','kpi-years'].forEach(id => {
         setKpi(id, '—');
         document.getElementById(id).querySelector('.value').style.color = '#ccc';
     });
+    ['kpi-missions-green','kpi-missions-red','kpi-distance-green','kpi-distance-red']
+        .forEach(id => { document.getElementById(id).textContent = '—'; });
+    ['kpi-missions','kpi-distance'].forEach(id =>
+        document.getElementById(id).classList.remove('loading'));
     console.error('WFS error:', err);
 });
 
@@ -388,6 +653,16 @@ fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
     });
 })
 .catch(err => console.error('Dive time WFS error:', err));
+
+// ── Tab switching ─────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+});
 
 // ── Sensor × year table ─────────────────────────────────────────────────
 const YEARS = [2017,2018,2019,2021,2022,2023,2024,2025];
@@ -475,6 +750,57 @@ fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
     console.error('sensor-km WFS feil:', err);
 });
 
+// ── Vehicle × year table ─────────────────────────────────────────────────
+fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+      '&TYPENAMES=NTNU:track_km_wfs&outputFormat=application/json')
+.then(r => r.json())
+.then(data => {
+    const features = (data.features || []).map(f => f.properties);
+    const vehicles = [...new Set(features.map(p => p.vehicle))].sort();
+    const km = {};
+    features.forEach(p => {
+        if (!km[p.vehicle]) km[p.vehicle] = {};
+        km[p.vehicle][p.year] = p.km;
+    });
+
+    const fmt1 = v => (v === 0 || v == null) ? '—' : v.toFixed(1);
+
+    const thead = '<thead><tr>'
+        + '<th class="row-header">Vehicle</th>'
+        + YEARS.map(y => `<th>${y}</th>`).join('')
+        + '<th class="total-col">Total</th>'
+        + '</tr></thead>';
+
+    const rows = vehicles.map(v => {
+        const cells = YEARS.map(y => km[v]?.[y] ?? null);
+        const total = cells.reduce((s, c) => s + (c ?? 0), 0);
+        return { v, cells, total };
+    });
+    const colTotals = YEARS.map((_, i) => rows.reduce((s, r) => s + (r.cells[i] ?? 0), 0));
+    const grand = colTotals.reduce((s, c) => s + c, 0);
+
+    const tbody = '<tbody>'
+        + rows.map(({ v, cells, total }) =>
+            `<tr><td class="row-label" style="color:${vehicleColor(v)};font-weight:600">${v}</td>`
+            + cells.map(c => c == null
+                ? '<td class="none">—</td>'
+                : `<td class="km">${c.toFixed(1)}</td>`
+            ).join('')
+            + `<td class="km total-col">${fmt1(total)}</td></tr>`
+        ).join('')
+        + '<tr class="total-row"><td class="row-label">Total</td>'
+        + colTotals.map(c => `<td class="km">${fmt1(c)}</td>`).join('')
+        + `<td class="km total-col">${fmt1(grand)}</td></tr>`
+        + '</tbody>';
+
+    document.getElementById('vehicle-table-wrap').innerHTML =
+        '<table class="sensor-table">' + thead + tbody + '</table>';
+})
+.catch(err => {
+    document.getElementById('vehicle-table-wrap').textContent = 'Could not load km data.';
+    console.error('vehicle-km WFS error:', err);
+});
+
 // ── Systemstatus ──────────────────────────────────────────────────────────
 function setStatus(dotId, msgId, up, msg) {
     document.getElementById(dotId).className = 'status-dot ' + (up ? 'up' : 'down');
@@ -498,6 +824,188 @@ fetch(GS + '/gwc/rest/layers.json', { headers: { Authorization: AUTH } })
         setStatus('dot-gwc', 'msg-gwc', r.ok, r.ok ? n + ' layers registered' : 'Error');
     }))
     .catch(() => setStatus('dot-gwc', 'msg-gwc', false, 'No response'));
+
+// ── Top-level view switching ──────────────────────────────────────────────
+document.querySelectorAll('.top-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.top-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('view-' + btn.dataset.view).classList.add('active');
+    });
+});
+
+// ── Farkoster-view ────────────────────────────────────────────────────────
+const VEHICLES = [
+    { id: 'lauv-fridtjof', label: 'Fridtjof', color: '#2277cc' },
+    { id: 'lauv-harald',   label: 'Harald',   color: '#ff8833' },
+    { id: 'lauv-roald',    label: 'Roald',    color: '#00cc66' },
+    { id: 'lauv-thor',     label: 'Thor',     color: '#aa44ff' },
+    { id: 'lauv-marie',    label: 'Marie',    color: '#00cccc' },
+];
+
+const INSTRUMENTS = [
+    { name: 'CTD',                vehicles: ['lauv-fridtjof','lauv-harald','lauv-roald','lauv-thor','lauv-marie'] },
+    { name: 'Klorofyll-a',        vehicles: ['lauv-harald','lauv-roald','lauv-thor'] },
+    { name: 'Turbiditet',         vehicles: ['lauv-roald','lauv-thor'] },
+    { name: 'Oksygen',            vehicles: ['lauv-roald'] },
+    { name: 'CDOM',               vehicles: ['lauv-harald'] },
+    { name: 'Opt. tilbakespred.', vehicles: ['lauv-harald'] },
+    { name: 'Sonar',              vehicles: ['lauv-fridtjof','lauv-thor','lauv-marie'] },
+    { name: 'Kamera',             vehicles: ['lauv-fridtjof'] },
+];
+
+const MS_LABELS = {
+    success:          { icon: '✅', label: 'Success' },
+    user_surface:     { icon: '🌊', label: 'User surface' },
+    user_depth_late:  { icon: '⚠️',  label: 'User depth late' },
+    user_depth_early: { icon: '⚠️',  label: 'User depth early' },
+    technical:        { icon: '❌', label: 'Technical' },
+    unknown:          { icon: '❓', label: 'Unknown' },
+};
+
+// Build vehicle tab buttons
+const tabBar    = document.getElementById('vehicle-tab-bar');
+const panelWrap = document.getElementById('vehicle-panels');
+
+VEHICLES.forEach((v, i) => {
+    const btn = document.createElement('button');
+    btn.className  = 'vehicle-tab-btn' + (i === 0 ? ' active' : '');
+    btn.dataset.vid = v.id;
+    btn.innerHTML  = `<span class="vehicle-dot" style="background:${v.color}"></span>${v.label}`;
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.vehicle-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.vehicle-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('vp-' + v.id).classList.add('active');
+    });
+    tabBar.appendChild(btn);
+
+    const panel = document.createElement('div');
+    panel.className = 'vehicle-panel' + (i === 0 ? ' active' : '');
+    panel.id = 'vp-' + v.id;
+
+    // Instruments
+    const instrItems = INSTRUMENTS.map(ins => {
+        const has = ins.vehicles.includes(v.id);
+        return `<li><span class="instr-icon">${has ? '✅' : '❌'}</span>${ins.name}</li>`;
+    }).join('');
+    const instrCard = `<div class="instr-card">
+        <h3>Instrumenter</h3>
+        <ul class="instr-list">${instrItems}</ul>
+    </div>`;
+
+    // Stats (placeholders — filled by JS fetch)
+    const statsCard = `<div class="stats-card" id="stats-${v.id}">
+        <h3>Statistikk</h3>
+        <div class="stats-grid">
+            <div class="stat-item"><div class="sv" id="sv-tottime-${v.id}">—</div><div class="sl">Total tid (t)</div></div>
+            <div class="stat-item"><div class="sv" id="sv-divetime-${v.id}">—</div><div class="sl">Dykketid &gt;1m (t)</div></div>
+            <div class="stat-item"><div class="sv" id="sv-totkm-${v.id}">—</div><div class="sl">Total km</div></div>
+            <div class="stat-item"><div class="sv" id="sv-divekm-${v.id}">—</div><div class="sl">Km ved &gt;1m</div></div>
+        </div>
+    </div>`;
+
+    // Mission status (placeholder)
+    const msCard = `<div class="mission-card" id="ms-${v.id}" style="grid-column:2">
+        <h3>Missions</h3>
+        <div class="mission-status-grid" id="msg-${v.id}"><span style="color:#ccc">Laster…</span></div>
+    </div>`;
+
+    panel.innerHTML = instrCard + statsCard + msCard;
+    panelWrap.appendChild(panel);
+});
+
+// Fetch all vehicle data in parallel
+Promise.all([
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:mission_status_wfs&outputFormat=application/json').then(r=>r.json()),
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:mission_hours_wfs&outputFormat=application/json').then(r=>r.json()),
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:dive_time_wfs&outputFormat=application/json').then(r=>r.json()),
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:track_km_wfs&outputFormat=application/json').then(r=>r.json()),
+    fetch(GS + '/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:track_km_all_wfs&outputFormat=application/json').then(r=>r.json()),
+]).then(([msData, hoursData, diveData, kmDepthData, kmAllData]) => {
+
+    // mission_status counts per vehicle
+    const msMap = {};
+    (msData.features||[]).forEach(f => {
+        const {vehicle, mission_status, n_missions} = f.properties;
+        if (!msMap[vehicle]) msMap[vehicle] = {};
+        msMap[vehicle][mission_status] = n_missions;
+    });
+
+    // total hours per vehicle
+    const hoursMap = {};
+    (hoursData.features||[]).forEach(f => { hoursMap[f.properties.vehicle] = f.properties.total_hours; });
+
+    // dive hours per vehicle
+    const diveMap = {};
+    (diveData.features||[]).forEach(f => { diveMap[f.properties.vehicle] = f.properties.dive_hours; });
+
+    // km at depth per vehicle
+    const kmDepthMap = {};
+    (kmDepthData.features||[]).forEach(f => {
+        const {vehicle, km} = f.properties;
+        kmDepthMap[vehicle] = (kmDepthMap[vehicle]||0) + (km||0);
+    });
+
+    // km total per vehicle
+    const kmAllMap = {};
+    (kmAllData.features||[]).forEach(f => {
+        const {vehicle, km} = f.properties;
+        kmAllMap[vehicle] = (kmAllMap[vehicle]||0) + (km||0);
+    });
+
+    VEHICLES.forEach(v => {
+        const vid = v.id;
+
+        // Stats
+        const totalH  = hoursMap[vid] ?? '—';
+        const diveH   = diveMap[vid]  ?? '—';
+        const diveKm  = kmDepthMap[vid] ? kmDepthMap[vid].toFixed(1) : '—';
+        const totalKm = kmAllMap[vid]   ? kmAllMap[vid].toFixed(1)   : '—';
+        document.getElementById('sv-tottime-'  + vid).textContent = typeof totalH  === 'number' ? totalH.toFixed(1)  : totalH;
+        document.getElementById('sv-divetime-' + vid).textContent = typeof diveH   === 'number' ? diveH.toFixed(1)   : diveH;
+        document.getElementById('sv-totkm-'    + vid).textContent = totalKm;
+        document.getElementById('sv-divekm-'   + vid).textContent = diveKm;
+
+        // Mission status grid
+        const counts = msMap[vid] || {};
+        const total  = Object.values(counts).reduce((s, n) => s + n, 0);
+
+        // Slå saman user_depth_late + user_depth_early til 'user_depth'
+        const merged = {
+            success:      counts.success      || 0,
+            user_surface: counts.user_surface || 0,
+            user_depth:   (counts.user_depth_late||0) + (counts.user_depth_early||0),
+            technical:    counts.technical    || 0,
+        };
+
+        const statDefs = [
+            { key:'success',      icon:'✅', label:'Success' },
+            { key:'user_surface', icon:'🌊', label:'User surface' },
+            { key:'user_depth',   icon:'⚠️',  label:'User depth' },
+            { key:'technical',    icon:'❌', label:'Technical' },
+        ];
+
+        const gridHTML = `
+            <div class="ms-item" style="grid-column:1/-1;text-align:left;font-size:13px;font-weight:700;color:#222;margin-bottom:4px">
+                Totalt: ${total} missions
+            </div>
+            ${statDefs.map(d => {
+                const n   = merged[d.key] || 0;
+                const pct = total > 0 ? Math.round(n/total*100) : 0;
+                return `<div class="ms-item">
+                    <div class="ms-icon">${d.icon}</div>
+                    <div class="ms-count">${n}</div>
+                    <div class="ms-pct">${pct}%</div>
+                    <div class="ms-label">${d.label}</div>
+                </div>`;
+            }).join('')}`;
+
+        document.getElementById('msg-' + vid).innerHTML = gridHTML;
+        document.getElementById('msg-' + vid).style.gridTemplateColumns = 'repeat(5, 1fr)';
+    });
+}).catch(err => console.error('Farkoster WFS error:', err));
 </script>
 </body>
 </html>

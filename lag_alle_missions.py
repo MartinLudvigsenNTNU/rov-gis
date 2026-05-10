@@ -23,6 +23,7 @@ WITH ordered AS (
         LAG(timestamp) OVER (PARTITION BY vehicle, name, year ORDER BY timestamp) AS prev_ts,
         LAG(geom)      OVER (PARTITION BY vehicle, name, year ORDER BY timestamp) AS prev_geom
     FROM auv_tracks WHERE vessel_transit = false
+    -- mission_status hentes per mission nedanfor
 ),
 flagged AS (
     SELECT *,
@@ -64,9 +65,14 @@ SELECT
     COALESCE(sd.distance_km, 0) AS distance_km,
     COALESCE(sd.n_jumps, 0)     AS n_jumps,
     COUNT(*) OVER (PARTITION BY st.vehicle, st.name, st.year) AS total_segments,
-    st.duration_min < 3 AS aborted
+    st.duration_min < 3 AS aborted,
+    ms.mission_status
 FROM seg_times st
 LEFT JOIN seg_dist sd USING (vehicle, name, year, segment)
+LEFT JOIN (
+    SELECT DISTINCT vehicle, name, year, mission_status
+    FROM auv_tracks WHERE mission_status IS NOT NULL
+) ms USING (vehicle, name, year)
 ORDER BY st.vehicle, st.year, st.start_time
 """)
 all_rows = cur.fetchall()
@@ -88,12 +94,21 @@ center = Alignment(horizontal='center', vertical='center')
 left   = Alignment(horizontal='left',   vertical='center')
 
 HEADERS = [
-    'Navn (mission)', 'Kampanje', 'År',
+    'Namn (mission)', 'Kampanje', 'År',
     'Startdato', 'Starttid', 'Sluttdato', 'Slutttid',
     'Varighet (min)', 'Varighet (t:mm)', 'Distanse (km)',
-    'Antall punkter', 'Status', 'Merknad',
+    'Antall punkter', 'Avbrot-status', 'Mission-status', 'Merknad',
 ]
-COL_WIDTHS = [45, 40, 6, 12, 10, 12, 10, 16, 14, 14, 16, 10, 40]
+COL_WIDTHS = [45, 40, 6, 12, 10, 12, 10, 16, 14, 14, 16, 12, 14, 40]
+
+# Farge per mission_status
+STATUS_FILLS = {
+    'success':          PatternFill(start_color='D6F0D6', end_color='D6F0D6', fill_type='solid'),  # grøn
+    'technical':        PatternFill(start_color='FFE4B5', end_color='FFE4B5', fill_type='solid'),  # oransje
+    'user_depth_late':  PatternFill(start_color='D6E8FA', end_color='D6E8FA', fill_type='solid'),  # blå
+    'user_depth_early': PatternFill(start_color='EBF3FF', end_color='EBF3FF', fill_type='solid'),  # lysblå
+    'user_surface':     PatternFill(start_color='F0F0F0', end_color='F0F0F0', fill_type='solid'),  # grå
+}
 
 for vehicle_id, label, hdr_hex in VEHICLES:
     rows = by_vehicle.get(vehicle_id, [])
@@ -101,7 +116,6 @@ for vehicle_id, label, hdr_hex in VEHICLES:
 
     header_font  = Font(bold=True, color='FFFFFF')
     header_fill  = PatternFill(start_color=hdr_hex, end_color=hdr_hex, fill_type='solid')
-    alt_fill     = PatternFill(start_color='E8F0F7', end_color='E8F0F7', fill_type='solid')
     aborted_fill = PatternFill(start_color='F5E0E0', end_color='F5E0E0', fill_type='solid')
     split_fill   = PatternFill(start_color='FFF3CD', end_color='FFF3CD', fill_type='solid')
 
@@ -113,12 +127,12 @@ for vehicle_id, label, hdr_hex in VEHICLES:
     ok_count = 0
     for data_row in rows:
         _, name, campaign, year, segment, start_time, end_time, \
-            duration_min, n_points, distance_km, n_jumps, total_segments, aborted = data_row
+            duration_min, n_points, distance_km, n_jumps, total_segments, aborted, mission_status = data_row
 
         dur = float(duration_min)
         dur_str = f'{int(dur//60)}:{int(dur%60):02d}'
 
-        status = 'Aborted' if aborted else 'OK'
+        abort_status = 'Aborted' if aborted else 'OK'
         notes = []
         if total_segments > 1:
             notes.append(f'Del {segment} av {total_segments} (splittet pga. 24t gap)')
@@ -133,7 +147,7 @@ for vehicle_id, label, hdr_hex in VEHICLES:
             end_time.strftime('%H:%M:%S')   if end_time   else '',
             round(dur, 1), dur_str,
             round(float(distance_km), 2),
-            n_points, status, '; '.join(notes),
+            n_points, abort_status, mission_status or '', '; '.join(notes),
         ]
 
         excel_row = ws.max_row + 1
@@ -141,8 +155,8 @@ for vehicle_id, label, hdr_hex in VEHICLES:
             fill = aborted_fill
         elif total_segments > 1:
             fill = split_fill
-        elif excel_row % 2 == 0:
-            fill = alt_fill
+        elif mission_status in STATUS_FILLS:
+            fill = STATUS_FILLS[mission_status]
         else:
             fill = None
 
@@ -151,13 +165,13 @@ for vehicle_id, label, hdr_hex in VEHICLES:
             if fill:
                 cell.fill = fill
             cell.border = border
-            cell.alignment = left if col_idx in (1, 2, 13) else center
+            cell.alignment = left if col_idx in (1, 2, 14) else center
 
         if not aborted:
             ok_count += 1
 
     # Totalrad (kun ikke-aborted missions)
-    ok_rows = [r for r in rows if not r[12]]
+    ok_rows = [r for r in rows if not r[12]]  # r[12] = aborted
     last_data = ws.max_row
     total_row = last_data + 2
     totals = [
@@ -170,11 +184,18 @@ for vehicle_id, label, hdr_hex in VEHICLES:
         c = ws.cell(row=total_row, column=col, value=val)
         c.font = Font(bold=True)
 
-    # Aborted-sammendrag
+    # Statistikk for mission_status (berre for Fridtjof der vi har data)
     ab_rows = [r for r in rows if r[12]]
     ab_info = ws.cell(row=total_row + 1, column=1,
         value=f'Aborted missions (< 3 min): {len(ab_rows)} stk — ikke med i totalen')
     ab_info.font = Font(italic=True, color='888888')
+    if any(r[13] for r in rows):
+        from collections import Counter
+        status_counts = Counter(r[13] or 'ukjend' for r in rows if not r[12])
+        info = '  |  '.join(f'{k}: {v}' for k,v in sorted(status_counts.items()))
+        ms_cell = ws.cell(row=total_row + 2, column=1,
+            value=f'Mission-status (ikkje-aborted): {info}')
+        ms_cell.font = Font(italic=True, color='555555')
 
     for i, w in enumerate(COL_WIDTHS, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
