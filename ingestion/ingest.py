@@ -19,7 +19,9 @@ from shapely.wkb import dumps
 
 DATA_ROOT    = "/data"
 GEOSERVER    = "http://geoserver:8080/geoserver"
-GWC_CREDS    = base64.b64encode(b"admin:geoserver").decode()
+_GS_USER     = os.environ.get("GEOSERVER_ADMIN_USER", "admin")
+_GS_PASS     = os.environ.get("GEOSERVER_ADMIN_PASSWORD", "geoserver")
+GWC_CREDS    = base64.b64encode(f"{_GS_USER}:{_GS_PASS}".encode()).decode()
 
 _VEHICLE_LAYER = {
     "lauv-fridtjof": "NTNU:auv_fridtjof",
@@ -332,7 +334,10 @@ def lsf_to_points(lsf_path):
 
 # --- Database ---
 conn = psycopg2.connect(
-    host="postgis", database="rovdb", user="rovadmin", password="rovpassword"
+    host=os.environ.get("POSTGRES_HOST", "postgis"),
+    database=os.environ.get("POSTGRES_DB", "rovdb"),
+    user=os.environ.get("POSTGRES_USER", "rovadmin"),
+    password=os.environ.get("POSTGRES_PASSWORD"),
 )
 cur = conn.cursor()
 

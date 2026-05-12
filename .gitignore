@@ -1,3 +1,6 @@
+# Secrets
+.env
+
 # Ikke last opp store datafiler
 web/all_tracks.geojson
 web/track_test01.geojson
