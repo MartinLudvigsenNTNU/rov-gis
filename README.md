@@ -70,3 +70,7 @@ Posisjon er rekna ut frå `EstimatedState`-meldingar med NED-offset konvertert t
 - [GeoServer](https://geoserver.org)
 - [Leaflet.js](https://leafletjs.com)
 - [imcpy](https://github.com/oysstu/imcpy) – Python-bindingar for IMC-protokollen EOF
+
+## Visste du?
+
+Meir enn 80 % av verdshava er umappa. Til samanlikning har vi kart over overflata til Mars med høgare oppløysing enn botnen av havet.
