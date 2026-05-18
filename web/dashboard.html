@@ -808,7 +808,7 @@ function setStatus(dotId, msgId, up, msg) {
 }
 
 // GeoServer
-fetch(GS + '/web/', { method: 'HEAD' })
+fetch(GS + '/rest/about/version.json', { headers: { Authorization: AUTH } })
     .then(r => setStatus('dot-gs', 'msg-gs', r.ok, r.ok ? 'Responding (HTTP ' + r.status + ')' : 'HTTP ' + r.status))
     .catch(() => setStatus('dot-gs', 'msg-gs', false, 'No response'));
 

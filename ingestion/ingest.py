@@ -430,10 +430,20 @@ for path in new_files:
 print(f"\nFerdig! {total} nye punkter lagt til ({total + sum(1 for _ in ingested)} totalt)")
 
 if total > 0:
-    print("Refresher auv_missions…")
-    cur.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY auv_missions")
+    mat_views = [
+        "auv_missions",
+        "dive_time_mat",
+        "mission_hours_mat",
+        "mission_status_mat",
+        "mission_time_mat",
+        "track_km_by_vehicle_year",
+        "track_km_all_by_vehicle_year",
+    ]
+    for mv in mat_views:
+        print(f"Refresher {mv}…")
+        cur.execute(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {mv}")
     conn.commit()
-    print("auv_missions oppdatert.")
+    print("Alle materialiserte views oppdatert.")
 
 cur.close()
 conn.close()
