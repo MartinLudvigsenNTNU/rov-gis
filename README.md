@@ -1,4 +1,3 @@
-cat > ~/rov-gis/README.md << 'EOF'
 # ROV/AUV GIS Demonstrator – NTNU
 
 Ein prototype for innsamling, lagring og visualisering av ROV/AUV-loggdata i ein skybasert GIS-teneste.
@@ -9,11 +8,19 @@ Demonstrere ein fullstendig pipeline frå råloggfiler (DUNE/IMC LSF-format) til
 Prosjektet er meint som eit lærings- og demonstrasjonsgrunnlag for ei framtidig operativ teneste.
 
 ## Arkitektur
+
+```
+LSF-loggfiler → Ingestion (Python/imcpy) → PostGIS → GeoServer (WMS/WFS) → Nginx → Leaflet-kart
+```
+
+Alle tenester køyrer i Docker og kommuniserer over eit internt nettverk. Nginx fungerer som
+reverse proxy og leverer webklienten, noko som eliminerer CORS-problem mellom frontend og GeoServer.
+
 ## Tenester
 
 | Teneste | Port | Beskriving |
 |---|---|---|
-| Leaflet webkart | 8000 | Interaktivt kart |
+| Leaflet webkart | 80 | Interaktivt kart (via Nginx) |
 | GeoServer | 8080 | Kartmotor (WMS/WFS) |
 | PostGIS | 5432 | Spatial database |
 
@@ -35,6 +42,10 @@ docker compose up --build ingestion
 ```
 
 ### Opne kartet
+Gå til [http://localhost](http://localhost) i nettlesaren.
+Dashboardet er tilgjengeleg på [http://localhost/dashboard.html](http://localhost/dashboard.html).
+Hjelp og dokumentasjon finn du på [http://localhost/help.html](http://localhost/help.html).
+
 ## Dataformat
 
 Støttar DUNE/IMC LSF-format (`.lsf`) frå LSTS-verktøykjeda.
@@ -50,7 +61,6 @@ Posisjon er rekna ut frå `EstimatedState`-meldingar med NED-offset konvertert t
 
 ## Neste steg
 
-- [ ] Nginx reverse proxy (løyser CORS)
 - [ ] S3-kobling for automatisk innlasting
 - [ ] Støtte for ROV-loggformat
 - [ ] Tidsserie-kontroll i kartet
@@ -69,7 +79,7 @@ Posisjon er rekna ut frå `EstimatedState`-meldingar med NED-offset konvertert t
 - [PostGIS](https://postgis.net)
 - [GeoServer](https://geoserver.org)
 - [Leaflet.js](https://leafletjs.com)
-- [imcpy](https://github.com/oysstu/imcpy) – Python-bindingar for IMC-protokollen EOF
+- [imcpy](https://github.com/oysstu/imcpy) – Python-bindingar for IMC-protokollen
 
 ## Visste du?
 
