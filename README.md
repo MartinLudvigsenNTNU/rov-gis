@@ -1,85 +1,126 @@
-# ROV/AUV GIS Demonstrator – NTNU
+# ROV/AUV GIS Portal – NTNU
 
-Ein prototype for innsamling, lagring og visualisering av ROV/AUV-loggdata i ein skybasert GIS-teneste.
+Skybasert portal for innsamling, lagring og visualisering av AUV-loggdata frå NTNU si LAUV-flåte på Svalbard.
 
-## Formål
+**Live:** [https://auv.aurlab.marin.ntnu.no](https://auv.aurlab.marin.ntnu.no)
 
-Demonstrere ein fullstendig pipeline frå råloggfiler (DUNE/IMC LSF-format) til interaktivt webkart. 
-Prosjektet er meint som eit lærings- og demonstrasjonsgrunnlag for ei framtidig operativ teneste.
+## Status
+
+Portalen er i drift på NTNU OpenStack med HTTPS (Let's Encrypt).
+
+| | |
+|---|---|
+| **Farkoster** | lauv-fridtjof, lauv-harald, lauv-roald, lauv-thor, lauv-marie |
+| **Dataspenn** | 2017–2025 |
+| **Datapunkt** | ~10 millionar GPS-posisjonar |
+| **Missionar** | Klassifiserte med 5 utfallskategoriar |
 
 ## Arkitektur
 
 ```
-LSF-loggfiler → Ingestion (Python/imcpy) → PostGIS → GeoServer (WMS/WFS) → Nginx → Leaflet-kart
+LSF-loggfiler → Ingestion (Python/imcpy) → PostGIS → GeoServer + GWC → Nginx (HTTPS) → Leaflet
 ```
 
-Alle tenester køyrer i Docker og kommuniserer over eit internt nettverk. Nginx fungerer som
-reverse proxy og leverer webklienten, noko som eliminerer CORS-problem mellom frontend og GeoServer.
+System-Nginx terminerer HTTPS med Let's Encrypt-sertifikat og fungerer som reverse proxy.
+GeoWebCache (GWC) er integrert i GeoServer og cacher WMS-tiles per farkost og år, slik at
+kartvisning forblir rask sjølv for store datasett.
 
 ## Tenester
 
 | Teneste | Port | Beskriving |
 |---|---|---|
-| Leaflet webkart | 80 | Interaktivt kart (via Nginx) |
-| GeoServer | 8080 | Kartmotor (WMS/WFS) |
-| PostGIS | 5432 | Spatial database |
+| Nginx (HTTPS) | 443 / 80 | Reverse proxy, serverer web-klienten |
+| GeoServer | 8080 (intern) | Kartmotor — WMS via GWC, WFS for dashboard |
+| PostGIS | 5432 (intern) | Spatial database med views og mat. views |
 
 ## Kom i gang
 
 ### Krav
-- Docker Desktop
-- Python 3.11 (for lokal testing)
+- Docker og Docker Compose
+- Python 3.11+ (for lokal testing av ingestion)
 
 ### Start tenestene
 ```bash
+cp .env.example .env   # fyll inn credentials
 docker compose up -d
+python3 setup_geoserver.py   # første gong: set opp workspace, lag og stilar
 ```
 
 ### Last inn loggfiler
-Legg LSF-filer i `Data/`-mappa og kjør:
+Legg LSF-filer i `Data/`-mappa og køyr:
 ```bash
 docker compose up --build ingestion
 ```
+Ingestion oppdaterer alle materialiserte views automatisk etter inlasting.
 
-### Opne kartet
-Gå til [http://localhost](http://localhost) i nettlesaren.
-Dashboardet er tilgjengeleg på [http://localhost/dashboard.html](http://localhost/dashboard.html).
-Hjelp og dokumentasjon finn du på [http://localhost/help.html](http://localhost/help.html).
+### Opne portalen
+| Side | URL |
+|---|---|
+| Kart | https://auv.aurlab.marin.ntnu.no |
+| Dashboard | https://auv.aurlab.marin.ntnu.no/dashboard.html |
+| Hjelp | https://auv.aurlab.marin.ntnu.no/help.html |
+
+For lokal testing: erstatt domenet med `http://localhost`.
 
 ## Dataformat
 
-Støttar DUNE/IMC LSF-format (`.lsf`) frå LSTS-verktøykjeda.
+Støttar DUNE/IMC LSF-format (`.lsf` og `.lsf.gz`) frå LSTS-verktøykjeda.
 Posisjon er rekna ut frå `EstimatedState`-meldingar med NED-offset konvertert til WGS-84.
+
+## Mission-klassifisering
+
+Kvar missjon vert automatisk klassifisert basert på `VehicleState`, `PlanControlState` og `EstimatedState`:
+
+| Status | Beskriving |
+|---|---|
+| `success` | Gjennomført som planlagt, eller alle djupe manøvrar fullført |
+| `user_surface` | Operatør avbraut på overflata før djupdykk |
+| `user_depth_late` | Operatør avbraut under vatn etter ≥ 30 % av typisk distanse (≥ 0,55 km) |
+| `user_depth_early` | Operatør avbraut under vatn før 30 % av typisk distanse (< 0,55 km) |
+| `technical` | Missjon enda på grunn av feil (navigasjon, djupgrense, lekkasjesensor o.l.) |
 
 ## Bakgrunnskart
 
-- CartoCDN (lyst/mørkt)
+- OpenStreetMap (standard)
+- TopoSvalbard — NPI topografisk kart (EPSG:25833, via proj4leaflet)
+- CartoCDN lyst/mørkt
 - Esri satellitt
 - GEBCO batymetri
-- Kartverket topografisk
 - EMODnet batymetri
 
 ## Neste steg
 
-- [ ] S3-kobling for automatisk innlasting
+- [ ] S3-kobling for automatisk innlasting av nye loggfiler
 - [ ] Støtte for ROV-loggformat
-- [ ] Tidsserie-kontroll i kartet
-- [ ] Flytte til NTNU OpenStack
-- [ ] TopoSvalbard (NPI) som bakgrunnskart — NPI tilbyr WMTS i EPSG:25833 (native UTM-33N, ingen reprosjeksjon). Krev proj4leaflet for at Leaflet skal handtere ikkje-Mercator CRS, og eige EPSG:25833 gridset i GeoWebCache for at AUV-WMS-lag skal cachast riktig. GWC-seeding via REST-API fungerer ikkje for custom gridsets i GeoServer 2.24 — tiles må seedast via ekstern HTTP eller oppgraderast til GeoServer 2.25+.
-- [ ] lauv-fridtjof kamerabilete — kameraet lagrar JPEG-filer direkte til disk utanfor LSF-straumen (ingen `CompressedImage`/IMC-melding i loggen). Ingestion-pipeline må utvidast til å indeksera bildefiler frå tokt-mappene, kopla dei til GPS-posisjon via tidsstempel mot `EstimatedState`, og lagra bildeposisjon i PostGIS for visning i kartet.
-- [ ] lauv-marie sonardata — LSF-loggane inneheld ukjende IMC-ID-ar 2023 og 2024 (truleg `SatellitesInView`/`GnssHwMon` frå ein nyare IMC-versjon), pluss `DevDataBinary` med binær sonardata. For å visualisera sidescan/multibeam krevst dekoding av den binære straumen (proprietært format eller `SonarData`-pakker) og konvertering til GeoTIFF eller WCS-lag i GeoServer.
-- [ ] Fullstendig sensor-ingestion — les og lagra følgjande sensorar per punkt i `auv_tracks`: Klorofyll-a (IMC 289, harold/thor/roald), Turbiditet (IMC 288, thor/roald), Oksygen (IMC 295, roald), CDOM (IMC 903, harold), Optisk tilbakespredning (IMC 904, harold), `sonar_active` boolean (IMC 276 for thor/fridtjof, IMC 2023 for marie), `camera_active` boolean (IMC 277 for fridtjof). Merk: ikkje alle farkoster bereknar salthaldighet sjølv om dei loggar konduktivitet (lauv-thor manglar Salinity-melding).
-- [ ] Sensor × år dashboard-tabell — statisk tabell med sensorar som rader og år som kolonnar. Verdiar: akkumulerte km per sensor per år på tvers av farkoster (PostGIS `track_km_wfs` WFS-lag med `vessel_transit=false`). Sensor-til-farkost-mapping basert på `imc_meldingar.xlsx`-analysen.
-- [ ] Grafisk fil-opplasting i dashboard — Enkel "Last inn nye loggfiler"-boks i `dashboard.html`. Bruker vel LSF/LSF.GZ-filer, år, farkost og kampanje. Krev FastAPI-backend for å ta imot filer og køyre ingestion. Alternativt: knapp som triggar ingestion på filer som allereie ligg i `Data/`-mappa på serveren.
-- [ ] ML-basert anomalideteksjon på sensordata — tren ein enkel modell (t.d. Isolation Forest eller autoenkodar) på tidsserie-data frå klorofyll, turbiditet og oksygen for å automatisk flagga interessante punkt langs sporet. Desse kan vises som markerte segment i kartet, noko som gjer det enklare å navigera til område med biologisk aktivitet eller uvanlege vassmassar utan å lesa rå sensorgrafer.
+- [ ] Tidsserie-kontroll i kartet (skyv gjennom år animert)
+- [ ] Grafisk fil-opplasting i dashboard — knapp som triggar ingestion på filer i `Data/`
+- [ ] lauv-fridtjof kamerabilete — indekser JPEG-filer frå tokt-mapper, koble til GPS via tidsstempel, vis i kart
+- [ ] lauv-marie sonardata — dekod binær sonarstraum (`DevDataBinary`) til GeoTIFF/WCS-lag
+- [ ] Fullstendig sensor-ingestion — klorofyll-a, turbiditet, oksygen, CDOM, optisk tilbakespredning, `sonar_active`, `camera_active` per punkt i `auv_tracks`
+- [ ] ML-basert anomalideteksjon — Isolation Forest eller autoenkodar på klorofyll/turbiditet/oksygen-tidsserie for automatisk flagging av interessante segment
+
+## Ferdig
+
+- [x] Pipeline frå LSF-loggfiler til PostGIS (Python + imcpy)
+- [x] GeoServer med WMS-lag per farkost og år, filtrert for vessel_transit og aborterte missionar
+- [x] GeoWebCache-integrasjon — tiles cacht per farkost × år via CQL_FILTER
+- [x] Dashboard med oversikt, farkost-faner og mission status-breakdown
+- [x] Spatial søk med rektangel og datofilter, CSV-eksport
+- [x] Mission-klassifisering med 5 utfallskategoriar
+- [x] TopoSvalbard (NPI) som bakgrunnskart
+- [x] Materialiserte views for alle dashboard-statistikkar (rask WFS-respons)
+- [x] Distribusjon på NTNU OpenStack
+- [x] HTTPS med Let's Encrypt via Certbot
+- [x] Nginx reverse proxy med injeksjon av GeoServer-credentials (ingen hemmelege nøklar i frontend)
 
 ## Teknologi
 
 - [Docker](https://docker.com)
 - [PostGIS](https://postgis.net)
-- [GeoServer](https://geoserver.org)
-- [Leaflet.js](https://leafletjs.com)
+- [GeoServer](https://geoserver.org) + GeoWebCache
+- [Leaflet.js](https://leafletjs.com) + proj4leaflet
 - [imcpy](https://github.com/oysstu/imcpy) – Python-bindingar for IMC-protokollen
+- [Nginx](https://nginx.org) – HTTPS-terminering og reverse proxy
 
 ## Visste du?
 

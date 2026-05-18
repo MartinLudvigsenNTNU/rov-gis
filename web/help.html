@@ -183,9 +183,10 @@
         <!-- PURPOSE -->
         <div class="card" id="purpose">
             <h2>What this system does</h2>
-            <p>This dashboard visualises AUV (Autonomous Underwater Vehicle) operational data collected by NTNU's LAUV fleet at Svalbard between 2017 and 2025. It lets you browse tracks on a map, filter by vehicle, year and area, download track data as CSV, and inspect fleet-wide statistics.</p>
+            <p>This portal visualises AUV (Autonomous Underwater Vehicle) operational data collected by NTNU's LAUV fleet at Svalbard between 2017 and 2025. It lets you browse tracks on a map, filter by vehicle, year and area, download track data as CSV, and inspect fleet-wide statistics.</p>
             <p>The five vehicles in the dataset are <strong>Fridtjof</strong>, <strong>Harald</strong>, <strong>Roald</strong>, <strong>Thor</strong> and <strong>Marie</strong>. Each carries a different sensor payload (see the <em>Farkoster</em> tab in the dashboard).</p>
             <p>Data comes from raw DUNE/IMC log files (<code>.lsf</code> / <code>.lsf.gz</code>) ingested automatically into PostGIS. <strong>No real-time connection</strong> — all data is historical.</p>
+            <p>Portal URL: <a href="https://auv.aurlab.marin.ntnu.no" target="_blank">https://auv.aurlab.marin.ntnu.no</a></p>
         </div>
 
         <!-- ARCHITECTURE -->
@@ -195,11 +196,12 @@
                 <div class="arch-box"><strong>LSF log files</strong>DUNE/IMC binary</div>
                 <div class="arch-box"><strong>ingest.py</strong>Python + imcpy</div>
                 <div class="arch-box"><strong>PostGIS</strong>Spatial database</div>
-                <div class="arch-box"><strong>GeoServer</strong>WMS / WFS API</div>
+                <div class="arch-box"><strong>GeoServer + GWC</strong>WMS / WFS + tile cache</div>
+                <div class="arch-box"><strong>Nginx</strong>HTTPS reverse proxy</div>
                 <div class="arch-box"><strong>Leaflet</strong>Map frontend</div>
             </div>
             <p>Raw logs are parsed by <code>ingestion/ingest.py</code>, which extracts GPS positions (<code>EstimatedState</code>), CTD values and vehicle metadata from each file. Each position becomes a row in the <code>auv_tracks</code> table with latitude, longitude, depth, speed, temperature, salinity, and conductivity.</p>
-            <p>GeoServer serves pre-computed views and materialized views as WFS. The Leaflet map and dashboard consume these directly — no backend API layer.</p>
+            <p>GeoServer serves pre-computed views and materialized views as WFS for the dashboard, and as WMS tiles (via GeoWebCache) for the map. Nginx terminates HTTPS using a Let's Encrypt certificate and proxies all traffic — no GeoServer credentials are exposed to the browser.</p>
             <table class="def">
                 <tr><th>Component</th><th>Role</th></tr>
                 <tr><td><code>auv_tracks</code></td><td>Main table — one row per GPS point (~10 M rows)</td></tr>
@@ -208,6 +210,8 @@
                 <tr><td><code>track_km_by_vehicle_year</code></td><td>Accumulated km at depth &gt; 1 m, per vehicle × year (mat. view)</td></tr>
                 <tr><td><code>dive_time_mat</code></td><td>Hours at depth &gt; 1 m per vehicle (mat. view)</td></tr>
                 <tr><td><code>mission_status_mat</code></td><td>Mission outcome counts per vehicle (mat. view)</td></tr>
+                <tr><td><code>mission_time_mat</code></td><td>Total mission hours per vehicle (mat. view)</td></tr>
+                <tr><td>GeoWebCache (GWC)</td><td>Tile cache built into GeoServer — caches WMS tiles per vehicle layer and year (CQL_FILTER), avoiding re-rendering on every map request</td></tr>
             </table>
         </div>
 
@@ -215,7 +219,9 @@
         <div class="card" id="map">
             <h2>Map workflow</h2>
             <h3>Layer panel (left side)</h3>
-            <p>Tracks are grouped by vehicle and year. Toggle individual years or click the vehicle header to show/hide all years for that vehicle. The map loads tracks on demand — zooming in triggers higher-resolution tile requests.</p>
+            <p>Tracks are grouped by vehicle and year. Toggle individual years or click the vehicle header to show/hide all years for that vehicle. Each year is a separate WMS layer served via GeoWebCache — tiles are pre-seeded and cached so the map stays responsive even over large areas.</p>
+            <h3>How tiles are filtered by year</h3>
+            <p>The map sends a <code>CQL_FILTER=year=XXXX</code> parameter with every WMS tile request to GeoServer's GWC endpoint (<code>/geoserver/gwc/service/wms</code>). GWC caches one tile set per year per vehicle, so toggling a year on/off is fast after the first load.</p>
             <h3>Background maps</h3>
             <p>Two options: <strong>OpenStreetMap</strong> (default) and <strong>TopoSvalbard</strong> (NPI topographic map, better for fjord navigation context). TopoSvalbard uses EPSG:25833 (UTM 33N) natively.</p>
             <h3>Clicking a track</h3>
@@ -230,7 +236,13 @@
             <h3>Oversikt tab</h3>
             <p>Shows fleet-wide totals (missions, sailed distance, vehicles, years), two bar charts (distance per year; dive time per vehicle), and two matrix tables (sensor × year km; vehicle × year km).</p>
             <h3>Farkoster tab</h3>
-            <p>One sub-tab per vehicle. Each shows the sensor payload, four key statistics, and a mission outcome breakdown. Data is fetched live from GeoServer WFS.</p>
+            <p>One sub-tab per vehicle (Fridtjof, Harald, Roald, Thor, Marie). Each sub-tab shows:</p>
+            <ul>
+                <li>Sensor payload for that vehicle</li>
+                <li>Four key statistics: total km, dive time, mission hours, mission count</li>
+                <li>Mission status breakdown — counts for each of the five outcome categories (success, user_surface, user_depth_late, user_depth_early, technical)</li>
+            </ul>
+            <p>All statistics are fetched live from GeoServer WFS using materialized views for fast response.</p>
             <h3>Spatial search (top-right of map)</h3>
             <p>Draw a rectangle on the map, optionally set a date range, and click Search. The panel lists all missions whose tracks intersect the rectangle. You can export results as CSV.</p>
         </div>
@@ -329,8 +341,8 @@
         <div class="card" id="export">
             <h2>Export workflow</h2>
             <p>After running a spatial search, click <strong>Last ned CSV</strong> to download the result list as a comma-separated file. Each row contains mission name, vehicle, year, campaign, start time, and end time.</p>
-            <p>To export raw GPS tracks for a specific mission, use the GeoServer WFS endpoint directly:</p>
-            <code>GET /geoserver/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:auv_fridtjof&CQL_FILTER=name='&lt;mission_name&gt;'&outputFormat=application/json</code>
+            <p>To export raw GPS tracks for a specific mission, use the GeoServer WFS endpoint directly (requires HTTP Basic auth or access via the portal):</p>
+            <code>GET https://auv.aurlab.marin.ntnu.no/geoserver/NTNU/wfs?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=GetFeature&amp;TYPENAMES=NTNU:auv_fridtjof&amp;CQL_FILTER=name='&lt;mission_name&gt;'&amp;outputFormat=application/json</code>
             <p style="margin-top:8px">Replace <code>auv_fridtjof</code> with the relevant vehicle layer name.</p>
         </div>
 
@@ -352,7 +364,7 @@
             <p>In the map: draw a rectangle over Isfjorden, set year filter to 2022, click Søk.</p>
 
             <h3>Which Fridtjof missions had technical failures?</h3>
-            <p>Open the Farkoster tab → Fridtjof → Mission status: ❌ Technical shows 43 missions. The Excel file (<code>alle_missions.xlsx</code>) has a "Mission-status" column with the error reason in the Merknad column.</p>
+            <p>Open the Farkoster tab → Fridtjof → Mission status breakdown: the <span class="badge badge-tech">❌ technical</span> row shows the count. Click through to the map and draw a rectangle to narrow down by area.</p>
 
             <h3>Direct PostGIS query — missions deeper than 80 m</h3>
             <code>SELECT DISTINCT name, vehicle, MAX(depth) FROM auv_tracks WHERE depth &gt; 80 GROUP BY name, vehicle ORDER BY MAX(depth) DESC;</code>
@@ -365,7 +377,7 @@
             <p>Dashboard → Oversikt → Sailed distance per year chart. Hover each bar for the value.</p>
 
             <h3>Download all tracks for a specific campaign</h3>
-            <code>GET /geoserver/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=NTNU:auv_fridtjof&CQL_FILTER=campaign='sss_bjorn'&outputFormat=application/json</code>
+            <code>GET https://auv.aurlab.marin.ntnu.no/geoserver/NTNU/wfs?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=GetFeature&amp;TYPENAMES=NTNU:auv_fridtjof&amp;CQL_FILTER=campaign='sss_bjorn'&amp;outputFormat=application/json</code>
         </div>
 
     </main>
