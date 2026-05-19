@@ -32,6 +32,7 @@ services:
       - "8080:8080"
     volumes:
       - geoserver_data:/opt/geoserver/data_dir
+      - ./geoserver/global.xml:/opt/geoserver/data_dir/global.xml
     depends_on:
       postgis:
         condition: service_healthy
