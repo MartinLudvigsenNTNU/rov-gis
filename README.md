@@ -98,6 +98,7 @@ Kvar missjon vert automatisk klassifisert basert på `VehicleState`, `PlanContro
 - [ ] lauv-marie sonardata — dekod binær sonarstraum (`DevDataBinary`) til GeoTIFF/WCS-lag
 - [ ] Fullstendig sensor-ingestion — klorofyll-a, turbiditet, oksygen, CDOM, optisk tilbakespredning, `sonar_active`, `camera_active` per punkt i `auv_tracks`
 - [ ] ML-basert anomalideteksjon — Isolation Forest eller autoenkodar på klorofyll/turbiditet/oksygen-tidsserie for automatisk flagging av interessante segment
+- [ ] Brukarstatistikk og analytics — når Feide-innlogging er på plass kan brukar-ID loggast per request. Moglege metrics: unike brukarar per dag, mest søkte område, populære farkoster/år, eksport-frekvens. Kan implementerast med enkel PostgreSQL-logg eller Matomo (sjølvhosta).
 
 ## Ferdig
 
