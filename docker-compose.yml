@@ -22,6 +22,7 @@ services:
     image: kartoza/geoserver:2.24.0
     container_name: rov_geoserver
     restart: unless-stopped
+    mem_limit: 1536m
     environment:
       GEOSERVER_ADMIN_USER: ${GEOSERVER_ADMIN_USER}
       GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_ADMIN_PASSWORD}
@@ -30,6 +31,8 @@ services:
       CORS_ALLOWED_ORIGINS: "*"
       CORS_ALLOWED_METHODS: "GET,POST,PUT,DELETE,HEAD,OPTIONS"
       CORS_ALLOWED_HEADERS: "*"
+      INITIAL_MEMORY: 512m
+      MAXIMUM_MEMORY: 1024m
     ports:
       - "8080:8080"
     volumes:
