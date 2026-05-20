@@ -3,6 +3,7 @@ services:
   postgis:
     image: postgis/postgis:16-3.4
     container_name: rov_postgis
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -20,6 +21,7 @@ services:
   geoserver:
     image: kartoza/geoserver:2.24.0
     container_name: rov_geoserver
+    restart: unless-stopped
     environment:
       GEOSERVER_ADMIN_USER: ${GEOSERVER_ADMIN_USER}
       GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_ADMIN_PASSWORD}
