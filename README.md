@@ -2,7 +2,7 @@
 
 Skybasert portal for innsamling, lagring og visualisering av AUV-loggdata frå NTNU si LAUV-flåte på Svalbard.
 
-**Live:** [https://auv.aurlab.marin.ntnu.no](https://auv.aurlab.marin.ntnu.no)
+**Live:** [https://auv.aurlab.marin.ntnu.no/UNIS-AT334](https://auv.aurlab.marin.ntnu.no/UNIS-AT334)
 
 ## Status
 
@@ -56,9 +56,9 @@ Ingestion oppdaterer alle materialiserte views automatisk etter inlasting.
 ### Opne portalen
 | Side | URL |
 |---|---|
-| Kart | https://auv.aurlab.marin.ntnu.no |
-| Dashboard | https://auv.aurlab.marin.ntnu.no/dashboard.html |
-| Hjelp | https://auv.aurlab.marin.ntnu.no/help.html |
+| Kart | https://auv.aurlab.marin.ntnu.no/UNIS-AT334 |
+| Dashboard | https://auv.aurlab.marin.ntnu.no/UNIS-AT334/dashboard.html |
+| Hjelp | https://auv.aurlab.marin.ntnu.no/UNIS-AT334/help.html |
 
 For lokal testing: erstatt domenet med `http://localhost`.
 

@@ -5,7 +5,7 @@
     </contact>
     <charset>UTF-8</charset>
     <numDecimals>0</numDecimals>
-    <proxyBaseUrl>https://auv.aurlab.marin.ntnu.no/geoserver</proxyBaseUrl>
+    <proxyBaseUrl>https://auv.aurlab.marin.ntnu.no/UNIS-AT334/geoserver</proxyBaseUrl>
     <verbose>false</verbose>
     <verboseExceptions>false</verboseExceptions>
     <localWorkspaceIncludesPrefix>false</localWorkspaceIncludesPrefix>

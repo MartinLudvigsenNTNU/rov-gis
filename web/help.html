@@ -186,7 +186,7 @@
             <p>This portal visualises AUV (Autonomous Underwater Vehicle) operational data collected by NTNU's LAUV fleet at Svalbard between 2017 and 2025. It lets you browse tracks on a map, filter by vehicle, year and area, download track data as CSV, and inspect fleet-wide statistics.</p>
             <p>The five vehicles in the dataset are <strong>Fridtjof</strong>, <strong>Harald</strong>, <strong>Roald</strong>, <strong>Thor</strong> and <strong>Marie</strong>. Each carries a different sensor payload (see the <em>Farkoster</em> tab in the dashboard).</p>
             <p>Data comes from raw DUNE/IMC log files (<code>.lsf</code> / <code>.lsf.gz</code>) ingested automatically into PostGIS. <strong>No real-time connection</strong> — all data is historical.</p>
-            <p>Portal URL: <a href="https://auv.aurlab.marin.ntnu.no" target="_blank">https://auv.aurlab.marin.ntnu.no</a></p>
+            <p>Portal URL: <a href="https://auv.aurlab.marin.ntnu.no/UNIS-AT334" target="_blank">https://auv.aurlab.marin.ntnu.no/UNIS-AT334</a></p>
         </div>
 
         <!-- ARCHITECTURE -->
@@ -221,7 +221,7 @@
             <h3>Layer panel (left side)</h3>
             <p>Tracks are grouped by vehicle and year. Toggle individual years or click the vehicle header to show/hide all years for that vehicle. Each year is a separate WMS layer served via GeoWebCache — tiles are pre-seeded and cached so the map stays responsive even over large areas.</p>
             <h3>How tiles are filtered by year</h3>
-            <p>The map sends a <code>CQL_FILTER=year=XXXX</code> parameter with every WMS tile request to GeoServer's GWC endpoint (<code>/geoserver/gwc/service/wms</code>). GWC caches one tile set per year per vehicle, so toggling a year on/off is fast after the first load.</p>
+            <p>The map sends a <code>CQL_FILTER=year=XXXX</code> parameter with every WMS tile request to GeoServer's GWC endpoint (<code>/UNIS-AT334/geoserver/gwc/service/wms</code>). GWC caches one tile set per year per vehicle, so toggling a year on/off is fast after the first load.</p>
             <h3>Background maps</h3>
             <p>Two options: <strong>OpenStreetMap</strong> (default) and <strong>TopoSvalbard</strong> (NPI topographic map, better for fjord navigation context). TopoSvalbard uses EPSG:25833 (UTM 33N) natively.</p>
             <h3>Clicking a track</h3>
@@ -342,7 +342,7 @@
             <h2>Export workflow</h2>
             <p>After running a spatial search, click <strong>Last ned CSV</strong> to download the result list as a comma-separated file. Each row contains mission name, vehicle, year, campaign, start time, and end time.</p>
             <p>To export raw GPS tracks for a specific mission, use the GeoServer WFS endpoint directly (requires HTTP Basic auth or access via the portal):</p>
-            <code>GET https://auv.aurlab.marin.ntnu.no/geoserver/NTNU/wfs?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=GetFeature&amp;TYPENAMES=NTNU:auv_fridtjof&amp;CQL_FILTER=name='&lt;mission_name&gt;'&amp;outputFormat=application/json</code>
+            <code>GET https://auv.aurlab.marin.ntnu.no/UNIS-AT334/geoserver/NTNU/wfs?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=GetFeature&amp;TYPENAMES=NTNU:auv_fridtjof&amp;CQL_FILTER=name='&lt;mission_name&gt;'&amp;outputFormat=application/json</code>
             <p style="margin-top:8px">Replace <code>auv_fridtjof</code> with the relevant vehicle layer name.</p>
         </div>
 
@@ -377,7 +377,7 @@
             <p>Dashboard → Oversikt → Sailed distance per year chart. Hover each bar for the value.</p>
 
             <h3>Download all tracks for a specific campaign</h3>
-            <code>GET https://auv.aurlab.marin.ntnu.no/geoserver/NTNU/wfs?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=GetFeature&amp;TYPENAMES=NTNU:auv_fridtjof&amp;CQL_FILTER=campaign='sss_bjorn'&amp;outputFormat=application/json</code>
+            <code>GET https://auv.aurlab.marin.ntnu.no/UNIS-AT334/geoserver/NTNU/wfs?SERVICE=WFS&amp;VERSION=2.0.0&amp;REQUEST=GetFeature&amp;TYPENAMES=NTNU:auv_fridtjof&amp;CQL_FILTER=campaign='sss_bjorn'&amp;outputFormat=application/json</code>
         </div>
 
     </main>

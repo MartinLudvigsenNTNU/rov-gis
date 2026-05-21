@@ -295,7 +295,7 @@
             );
         }
 
-        fetch('/geoserver/rest/layers.json')
+        fetch('/UNIS-AT334/geoserver/rest/layers.json')
         .then(r => r.json())
         .then(data => {
             var geoLayers = (data.layers.layer || []).filter(l => {
@@ -304,7 +304,7 @@
             });
 
             var bboxFetches = geoLayers.map(layer =>
-                fetch('/geoserver/rest/layers/' + layer.name + '.json')
+                fetch('/UNIS-AT334/geoserver/rest/layers/' + layer.name + '.json')
                 .then(r => r.json())
                 .then(d => fetch(d.layer.resource.href))
                 .then(r => r.json())
@@ -330,7 +330,7 @@
 
                 Object.entries(cfg.yearColors).forEach(([year, color]) => {
                     groupedOverlays[groupLabel][dot(color) + year] = L.tileLayer.wms(
-                        '/geoserver/gwc/service/wms', {
+                        '/UNIS-AT334/geoserver/gwc/service/wms', {
                             layers:      workspace + ':' + layerName,
                             format:      'image/png',
                             transparent: true,
@@ -449,7 +449,7 @@
             }
 
             var cql = filters.join(' AND ');
-            var url = '/geoserver/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+            var url = '/UNIS-AT334/geoserver/NTNU/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
                       '&TYPENAMES=NTNU:auv_missions&outputFormat=application/json&count=2000' +
                       '&CQL_FILTER=' + encodeURIComponent(cql);
 
