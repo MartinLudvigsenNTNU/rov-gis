@@ -10,7 +10,7 @@
 
 Skybasert portal for innsamling, lagring og visualisering av AUV-loggdata frå NTNU si LAUV-flåte på Svalbard.
 
-**Live:** [https://auv.aurlab.marin.ntnu.no/UNIS-AT334](https://auv.aurlab.marin.ntnu.no/UNIS-AT334)
+**Live (erstattar):** [https://auv.aurlab.marin.ntnu.no/at334](https://auv.aurlab.marin.ntnu.no/at334) — den gamle `/UNIS-AT334`-ruta svarar framleis, men kartlaga er døde utan GeoServer.
 
 ## Status
 
