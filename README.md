@@ -1,12 +1,20 @@
 # ROV/AUV GIS Portal – NTNU
 
+> **Status (september 2026): stoppa sandbox — ikkje den kjørande portalen.**
+> AT334-portalen i produksjon (`auv.aurlab.marin.ntnu.no/at334`) køyrer no på
+> **aurlab-cloud** (MapLibre GL JS + pg_tileserv, prosjektkonfig i `projects/at334.yaml`,
+> frontend i `web/template/index.html`). GeoServer/Leaflet-stacken i dette repoet er
+> stoppa (verifisert juli 2026), og SLD-stilane og `vehicleConfig.yearColors` her styrer
+> ingenting lenger. Repoet er behalde som historisk referanse for den opphavlege
+> LSF→PostGIS-pipelinen.
+
 Skybasert portal for innsamling, lagring og visualisering av AUV-loggdata frå NTNU si LAUV-flåte på Svalbard.
 
 **Live:** [https://auv.aurlab.marin.ntnu.no/UNIS-AT334](https://auv.aurlab.marin.ntnu.no/UNIS-AT334)
 
 ## Status
 
-Portalen er i drift på NTNU OpenStack med HTTPS (Let's Encrypt).
+Portalen var i drift på NTNU OpenStack med HTTPS (Let's Encrypt) fram til sommaren 2026. Stacken er no stoppa — sjå statusnotatet øvst. Tabellen under gjeld siste driftstilstand.
 
 | | |
 |---|---|
